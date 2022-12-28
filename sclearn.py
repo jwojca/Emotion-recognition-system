@@ -18,7 +18,7 @@ from sklearn.tree import plot_tree
 import matplotlib.pyplot as plt
 from sklearn.inspection import DecisionBoundaryDisplay
 
-plotOn = True
+plotOn = False
 
 trainCSV = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\mergedTrain.csv'
 testCSV = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\mergedTest.csv'
@@ -34,8 +34,8 @@ def importdata():
 	testData = pd.read_csv(testCSV, sep= ';', header=None)
 	
 	# Printing the dataset obseravtions
-	print ("Dataset: ", trainData.head())
-	print ("Dataset: ", testData.head())
+	#print ("Dataset: ", trainData.head())
+	#print ("Dataset: ", testData.head())
 
 	return trainData, testData
 
@@ -63,12 +63,12 @@ def train_using_gini(X_train, X_test, y_train):
 	return clf_gini
 	
 # Function to perform training with entropy.
-def tarin_using_entropy(X_train, X_test, y_train):
+def train_using_entropy(X_train, X_test, y_train, maxDepth, minSamplesLeaf):
 
 	# Decision tree with entropy
 	clf_entropy = DecisionTreeClassifier(
 			criterion = "entropy", random_state = 100,
-			max_depth = 3, min_samples_leaf = 5)
+			max_depth = maxDepth, min_samples_leaf = minSamplesLeaf)
 
 	# Performing training
 	clf_entropy.fit(X_train, y_train)
@@ -87,14 +87,16 @@ def prediction(X_test, clf_object):
 # Function to calculate accuracy
 def cal_accuracy(y_test, y_pred):
 	
-	print("Confusion Matrix: \n",
-		confusion_matrix(y_test, y_pred))
+	#print("Confusion Matrix: \n",
+	#	confusion_matrix(y_test, y_pred))
 	
 	print ("Accuracy : ",
 	accuracy_score(y_test,y_pred)*100)
 	
-	print("Report : ",
-	classification_report(y_test, y_pred))
+	#print("Report : ",
+	#classification_report(y_test, y_pred))
+	acc = accuracy_score(y_test,y_pred)*100
+	return acc
 
 # Driver code
 def main():
@@ -103,21 +105,30 @@ def main():
 	trainData, testData = importdata()
 	X_train, X_test, y_train, y_test = loaddataset(trainData, testData)
 	clf_gini = train_using_gini(X_train, X_test, y_train)
-	clf_entropy = tarin_using_entropy(X_train, X_test, y_train)
 
 
-	# Operational Phase
-	print("Results Using Gini Index:")
+	depthLow= 1
+	depthHigh = 15
+	sampleLeafLow = 1
+	sampleLeafHigh = 40
+
+	depthRange = depthHigh - depthLow
+	sampleLeafRange = sampleLeafHigh - sampleLeafLow
 	
-	# Prediction using gini
-	y_pred_gini = prediction(X_test, clf_gini)
-	cal_accuracy(y_test, y_pred_gini)
-	
-	print("Results Using Entropy:")
-	# Prediction using entropy
-	y_pred_entropy = prediction(X_test, clf_entropy)
-	cal_accuracy(y_test, y_pred_entropy)
+	maxAcc = -1
+	bestPair = ['0', '0']
+	for i in range(depthRange):
+		for j in range(sampleLeafRange):
+			clf_entropy = train_using_entropy(X_train, X_test, y_train, depthLow + i, sampleLeafLow + j)
+			print("Results Using Entropy:\nMaxDepth: ", depthLow + i, ", MaxSampleLeaf: ", sampleLeafLow + j)
+			y_pred_entropy = prediction(X_test, clf_entropy)
+			acc= cal_accuracy(y_test, y_pred_entropy)
+			if(acc > maxAcc):
+				maxAcc = acc
+				bestPair[0] = depthLow + i
+				bestPair[1] = sampleLeafLow + j
 
+	print("Max accuracy was: ", maxAcc, "with ", bestPair)
 	#plot
 	if plotOn:
 		plt.figure(figsize=(20,20))
