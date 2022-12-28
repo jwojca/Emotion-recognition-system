@@ -18,9 +18,9 @@ from sklearn.tree import plot_tree
 import matplotlib.pyplot as plt
 from sklearn.inspection import DecisionBoundaryDisplay
 
+plotOn = False
 
-
-path = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\merged.csv'
+path = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\mergedTrain.csv'
 
 classList = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
 featureList = ['AU01_c', 'AU02_c', 'AU04_c', 'AU05_c', 'AU06_c', 'AU07_c', 'AU09_c',
@@ -108,18 +108,6 @@ def main():
 	clf_entropy = tarin_using_entropy(X_train, X_test, y_train)
 
 
-    #plot
-	print("Printed tree")
-	plt.figure(figsize=(20,20))
-	plot_tree(clf_entropy, filled=True, class_names=['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise'],
-	feature_names=featureList)
-	plt.title("Decision tree - entropy")
-	plt.show()
-
-	
-  
-    
-	
 	# Operational Phase
 	print("Results Using Gini Index:")
 	
@@ -131,6 +119,22 @@ def main():
 	# Prediction using entropy
 	y_pred_entropy = prediction(X_test, clf_entropy)
 	cal_accuracy(y_test, y_pred_entropy)
+
+	#plot
+	if plotOn:
+		plt.figure(figsize=(20,20))
+		plot_tree(clf_gini, filled=True, class_names=classList, feature_names=featureList)
+		plt.title("Decision tree - gini")
+		plt.show()
+		
+		input("Press Enter to continue...")
+
+		plt.figure(figsize=(20,20))
+		plot_tree(clf_entropy, filled=True, class_names=classList, feature_names=featureList)
+		plt.title("Decision tree - entropy")
+
+		plt.show()
+
 	
 	
 # Calling main function
