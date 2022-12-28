@@ -18,9 +18,10 @@ from sklearn.tree import plot_tree
 import matplotlib.pyplot as plt
 from sklearn.inspection import DecisionBoundaryDisplay
 
-plotOn = False
+plotOn = True
 
-path = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\mergedTrain.csv'
+trainCSV = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\mergedTrain.csv'
+testCSV = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\mergedTest.csv'
 
 classList = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
 featureList = ['AU01_c', 'AU02_c', 'AU04_c', 'AU05_c', 'AU06_c', 'AU07_c', 'AU09_c',
@@ -29,29 +30,26 @@ featureList = ['AU01_c', 'AU02_c', 'AU04_c', 'AU05_c', 'AU06_c', 'AU07_c', 'AU09
 
 # Function importing Dataset
 def importdata():
-	balance_data = pd.read_csv(path, sep= ';', header=None)
-	
-	# Printing the dataswet shape
-	print ("Dataset Length: ", len(balance_data))
-	print ("Dataset Shape: ", balance_data.shape)
+	trainData = pd.read_csv(trainCSV, sep= ';', header=None)
+	testData = pd.read_csv(testCSV, sep= ';', header=None)
 	
 	# Printing the dataset obseravtions
-	print ("Dataset: ",balance_data.head())
+	print ("Dataset: ", trainData.head())
+	print ("Dataset: ", testData.head())
 
-	return balance_data
+	return trainData, testData
 
-# Function to split the dataset
-def splitdataset(balance_data):
+# Function to load the dataset
+def loaddataset(trainData, testData):
 
 	# Separating the target variable
-	X = balance_data.values[1:len(balance_data), 1:18]
-	Y = balance_data.values[1:len(balance_data):, 19]
+	X_train = trainData.values[1:len(trainData), 1:18]
+	y_train = trainData.values[1:len(trainData):, 19]
 
-	# Splitting the dataset into train and test
-	X_train, X_test, y_train, y_test = train_test_split(
-	X, Y, test_size = 0.3, random_state = 100)
+	X_test = testData.values[1:len(testData), 1:18]
+	y_test = testData.values[1:len(testData):, 19]
 	
-	return X, Y, X_train, X_test, y_train, y_test
+	return X_train, X_test, y_train, y_test
 	
 # Function to perform training with giniIndex.
 def train_using_gini(X_train, X_test, y_train):
@@ -102,8 +100,8 @@ def cal_accuracy(y_test, y_pred):
 def main():
 	
 	# Building Phase
-	data = importdata()
-	X, Y, X_train, X_test, y_train, y_test = splitdataset(data)
+	trainData, testData = importdata()
+	X_train, X_test, y_train, y_test = loaddataset(trainData, testData)
 	clf_gini = train_using_gini(X_train, X_test, y_train)
 	clf_entropy = tarin_using_entropy(X_train, X_test, y_train)
 
