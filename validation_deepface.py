@@ -2,8 +2,8 @@
 import cv2
 import os
 from deepface import DeepFace
-path = r'C:\Users\hwojc\Desktop\Diplomka\AffectNet\Validation\angry'
-correctEmotion = 'angry'
+path = r'C:\Users\hwojc\Desktop\Diplomka\AffectNet\Merged\disgust'
+correctEmotion = 'disgust'
 
 totalClassification = 0
 angryClassification = 0
@@ -16,7 +16,7 @@ surpsiseClassification = 0
 correctClassification = 0
 
 for images in os.listdir(path):
-    if(images.endswith(".jpg")):
+    if(images.endswith(".jpg") or images.endswith(".png")):
          path2 = os.path.join(path,images)
          print(path2)
          img = cv2.imread(path2)
