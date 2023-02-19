@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 from sklearn.inspection import DecisionBoundaryDisplay
 
 plotOn = True
+loopingOn = False
 
 trainCSV = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\trainAUcOnly.csv'
 testCSV = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\testAUcOnly.csv'
@@ -106,39 +107,34 @@ def main():
 	X_train, X_test, y_train, y_test = loaddataset(trainData, testData)
 	clf_gini = train_using_gini(X_train, X_test, y_train)
 
+	if(loopingOn):
+		depthLow= 1
+		depthHigh = 15
+		sampleLeafLow = 5
+		sampleLeafHigh = 40
 
-	depthLow= 1
-	depthHigh = 15
-	sampleLeafLow = 1
-	sampleLeafHigh = 40
+		depthRange = depthHigh - depthLow
+		sampleLeafRange = sampleLeafHigh - sampleLeafLow
+		
+		maxAcc = -1
+		bestPair = ['0', '0']
+		for i in range(depthRange):
+			for j in range(sampleLeafRange):
+				clf_entropy = train_using_entropy(X_train, X_test, y_train, depthLow + i, sampleLeafLow + j)
+				print("Results Using Entropy:\nMaxDepth: ", depthLow + i, ", MaxSampleLeaf: ", sampleLeafLow + j)
+				y_pred_entropy = prediction(X_test, clf_entropy)
+				acc= cal_accuracy(y_test, y_pred_entropy)
+				if(acc > maxAcc):
+					maxAcc = acc
+					bestPair[0] = depthLow + i
+					bestPair[1] = sampleLeafLow + j
 
-	depthRange = depthHigh - depthLow
-	sampleLeafRange = sampleLeafHigh - sampleLeafLow
-	
-	maxAcc = -1
-	bestPair = ['0', '0']
-	for i in range(depthRange):
-		for j in range(sampleLeafRange):
-			clf_entropy = train_using_entropy(X_train, X_test, y_train, depthLow + i, sampleLeafLow + j)
-			print("Results Using Entropy:\nMaxDepth: ", depthLow + i, ", MaxSampleLeaf: ", sampleLeafLow + j)
-			y_pred_entropy = prediction(X_test, clf_entropy)
-			acc= cal_accuracy(y_test, y_pred_entropy)
-			if(acc > maxAcc):
-				maxAcc = acc
-				bestPair[0] = depthLow + i
-				bestPair[1] = sampleLeafLow + j
-
-	print("Max accuracy was: ", maxAcc, "with ", bestPair)
+		print("Max accuracy was: ", maxAcc, "with ", bestPair)
 	#plot
 	if plotOn:
-		plt.figure(figsize=(20,20))
-		plot_tree(clf_gini, filled=True, class_names=classList, feature_names=featureList)
-		plt.title("Decision tree - gini")
-		plt.show()
 		
-		input("Press Enter to continue...")
-
-		plt.figure(figsize=(20,20))
+		clf_entropy = train_using_entropy(X_train, X_test, y_train, 9, 9)
+		plt.figure(figsize=(40, 60))
 		plot_tree(clf_entropy, filled=True, class_names=classList, feature_names=featureList)
 		plt.title("Decision tree - entropy")
 
