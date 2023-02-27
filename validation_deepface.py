@@ -2,8 +2,8 @@
 import cv2
 import os
 from deepface import DeepFace
-path = r'C:\Users\hwojc\Desktop\Diplomka\AffectNet\Merged\disgust'
-correctEmotion = 'disgust'
+path = r'C:\Users\hwojc\Desktop\Microsoft dataset\Surprise'
+correctEmotion = 'surprise'
 
 totalClassification = 0
 angryClassification = 0

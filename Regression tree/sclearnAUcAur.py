@@ -91,14 +91,14 @@ def prediction(X_test, clf_object):
 # Function to calculate accuracy
 def cal_accuracy(y_test, y_pred):
 	
-	#print("Confusion Matrix: \n",
-	#	confusion_matrix(y_test, y_pred))
+	print("Confusion Matrix: \n",
+		confusion_matrix(y_test, y_pred))
 	
 	print ("Accuracy : ",
 	accuracy_score(y_test,y_pred)*100)
 	
-	#print("Report : ",
-	#classification_report(y_test, y_pred))
+	print("Report : ",
+	classification_report(y_test, y_pred))
 	acc = accuracy_score(y_test,y_pred)*100
 	return acc
 
@@ -137,6 +137,8 @@ def main():
 	#plot
 	if plotOn:
 		clf_entropy = train_using_entropy(X_train, X_test, y_train, 7, 37)
+		y_pred_entropy = prediction(X_test, clf_entropy)
+		acc= cal_accuracy(y_test, y_pred_entropy)
 
 		plt.figure(figsize=(25, 25))
 		plot_tree(clf_entropy, filled=True, class_names=classList, feature_names=featureList)
