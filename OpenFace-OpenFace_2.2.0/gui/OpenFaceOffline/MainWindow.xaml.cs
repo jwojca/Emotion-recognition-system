@@ -149,6 +149,18 @@ namespace OpenFaceOffline
         //image count
         public UInt64 frameCount = 0;
 
+        //emotionDict
+        public Dictionary<string, int> emotionsCount = new Dictionary<string, int>()
+        {
+            { "Angry", 0 },
+            { "Disgust", 0 },
+            { "Fear", 0 },
+            { "Happy", 0 },
+            { "Neutral", 0 },
+            { "Sad", 0 },
+            { "Surprise", 0 }
+        };
+
         public MainWindow()
         {
             InitializeComponent();
@@ -272,10 +284,9 @@ namespace OpenFaceOffline
                 // Record an observation
                 RecordObservation(recorder, visualizer_of.GetVisImage(), 0, detection_succeeding, reader.GetFx(), reader.GetFy(), reader.GetCx(), reader.GetCy(), reader.GetTimestamp(), reader.GetFrameNumber());
 
-
                 //image count
                 frameCount++;
-                Console.WriteLine("Img number: " + frameCount);
+                //Console.WriteLine("Img number: " + frameCount);
 
                 if(RecordTracked)
                 { 
@@ -628,7 +639,12 @@ namespace OpenFaceOffline
 
                     //overlay_image.JwojcaTest = "Happy";
 
+                    //init of the emotionsCount dictionary
+                    
+
                     string emotion;
+
+                   
 
               
                     //Decision tree
@@ -739,8 +755,33 @@ namespace OpenFaceOffline
                         emotion = "Happy";
                     }
 
+                    //increment of predicted emotion
+                    ++emotionsCount[emotion];
 
-                    overlay_image.JwojcaTest = emotion;
+                    uint numberOfFrames = 10;
+
+                    
+                    if(frameCount % numberOfFrames == 0)
+                    {
+                        //get most frequent emotion
+                        KeyValuePair<string, int> first = emotionsCount.OrderByDescending(key => key.Value).First();
+                        overlay_image.JwojcaTest = first.Key;
+                        //Console.WriteLine(first.Key);
+
+                        //set all emotions to null
+                        emotionsCount["Angry"] = 0;
+                        emotionsCount["Disgust"] = 0;
+                        emotionsCount["Fear"] = 0;
+                        emotionsCount["Happy"] = 0;
+                        emotionsCount["Neutral"] = 0;
+                        emotionsCount["Sad"] = 0;
+                        emotionsCount["Surprise"] = 0;
+
+                        
+
+                    }
+
+                    
 
 
 
