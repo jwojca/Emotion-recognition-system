@@ -40,6 +40,7 @@ using System.Windows;
 using System.Windows.Threading;
 using System.Windows.Media.Imaging;
 using System.Windows.Controls;
+using System.Linq;
 using Microsoft.WindowsAPICodePack.Dialogs;
 
 // Internal libraries
@@ -144,6 +145,9 @@ namespace OpenFaceOffline
 
         // Camera calibration parameters
         public float fx = -1, fy = -1, cx = -1, cy = -1;
+
+        //image count
+        public UInt64 frameCount = 0;
 
         public MainWindow()
         {
@@ -267,6 +271,11 @@ namespace OpenFaceOffline
 
                 // Record an observation
                 RecordObservation(recorder, visualizer_of.GetVisImage(), 0, detection_succeeding, reader.GetFx(), reader.GetFy(), reader.GetCx(), reader.GetCy(), reader.GetTimestamp(), reader.GetFrameNumber());
+
+
+                //image count
+                frameCount++;
+                Console.WriteLine("Img number: " + frameCount);
 
                 if(RecordTracked)
                 { 
@@ -511,6 +520,7 @@ namespace OpenFaceOffline
 
         }
 
+        
         private void VisualizeFeatures(RawImage frame, Visualizer visualizer, List<Tuple<float, float>> landmarks, List<bool> visibilities, bool detection_succeeding, 
             bool new_image, bool multi_face, float fx, float fy, float cx, float cy, double progress)
         {
@@ -617,11 +627,14 @@ namespace OpenFaceOffline
                     var auR = face_analyser.GetCurrentAUsReg();
 
                     //overlay_image.JwojcaTest = "Happy";
-                
 
+                    string emotion;
+
+              
+                    //Decision tree
                     if (auR["AU12"] <= 1.5)
                     {
-                        if(auC["AU07"] < 0.5)
+                        if (auC["AU07"] < 0.5)
                         {
                             if (auC["AU05"] < 0.5)
                             {
@@ -629,22 +642,22 @@ namespace OpenFaceOffline
                                 {
                                     if (auC["AU04"] < 0.5)
                                     {
-                                        overlay_image.JwojcaTest = "Neutral";
+                                        emotion = "Neutral";
                                     }
                                     else
                                     {
-                                        overlay_image.JwojcaTest = "Sad";
+                                        emotion = "Sad";
                                     }
                                 }
                                 else
                                 {
                                     if (auC["AU15"] < 0.5)
                                     {
-                                        overlay_image.JwojcaTest = "Sad";
+                                        emotion = "Sad";
                                     }
                                     else
                                     {
-                                        overlay_image.JwojcaTest = "Neutral";
+                                        emotion = "Neutral";
                                     }
                                 }
                             }
@@ -654,7 +667,7 @@ namespace OpenFaceOffline
                                 {
                                     if (auR["AU07"] <= 0.365)
                                     {
-                                        overlay_image.JwojcaTest = "Surprise";
+                                        emotion = "Surprise";
                                     }
                                     else
                                     {
@@ -662,22 +675,22 @@ namespace OpenFaceOffline
                                         {
                                             if (auR["AU10"] <= 0.475)
                                             {
-                                                overlay_image.JwojcaTest = "Neutral";
+                                                emotion = "Neutral";
                                             }
                                             else
                                             {
-                                                overlay_image.JwojcaTest = "Fear";
+                                                emotion = "Fear";
                                             }
                                         }
                                         else
                                         {
-                                            overlay_image.JwojcaTest = "Surprise";
+                                            emotion = "Surprise";
                                         }
                                     }
                                 }
                                 else
                                 {
-                                    overlay_image.JwojcaTest = "Fear";
+                                    emotion = "Fear";
                                 }
                             }
                         }
@@ -687,17 +700,17 @@ namespace OpenFaceOffline
                             {
                                 if (auC["AU04"] < 0.5)
                                 {
-                                    overlay_image.JwojcaTest = "Neutral";
+                                    emotion = "Neutral";
                                 }
                                 else
                                 {
                                     if (auC["AU10"] < 0.5)
                                     {
-                                        overlay_image.JwojcaTest = "Sad";
+                                        emotion = "Sad";
                                     }
                                     else
                                     {
-                                        overlay_image.JwojcaTest = "Angry";
+                                        emotion = "Angry";
                                     }
                                 }
                             }
@@ -705,17 +718,17 @@ namespace OpenFaceOffline
                             {
                                 if (auR["AU07"] <= 1.535)
                                 {
-                                    overlay_image.JwojcaTest = "Angry";
+                                    emotion = "Angry";
                                 }
                                 else
                                 {
                                     if (auR["AU25"] <= 1.81)
                                     {
-                                        overlay_image.JwojcaTest = "Disgust";
+                                        emotion = "Disgust";
                                     }
                                     else
                                     {
-                                        overlay_image.JwojcaTest = "Angry";
+                                        emotion = "Angry";
                                     }
                                 }
                             }
@@ -723,11 +736,12 @@ namespace OpenFaceOffline
                     }
                     else
                     {
-                        overlay_image.JwojcaTest = "Happy";
+                        emotion = "Happy";
                     }
 
-                        
-                            
+
+                    overlay_image.JwojcaTest = emotion;
+
 
 
 
