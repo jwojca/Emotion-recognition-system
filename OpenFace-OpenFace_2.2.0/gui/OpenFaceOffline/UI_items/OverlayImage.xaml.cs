@@ -82,7 +82,7 @@ namespace OpenFaceOffline
             FaceScale = new List<double>();
 
             //jwojca
-            JwojcaTest = -1;
+            JwojcaTest = "Other";
 
             //jwojca end
 
@@ -233,9 +233,9 @@ namespace OpenFaceOffline
 
             //jwojca emotion text
             dc.DrawRoundedRectangle(Brushes.WhiteSmoke, new Pen(Brushes.Black, 0.5 * scaling), new Rect((ActualWidth/2) - fps_width/2, 0, fps_width, fps_height), 3.0 * scaling, 3.0 * scaling);
-            FormattedText jwojcaTest_txt; // = new FormattedText("Val: " + (int)JwojcaTest, System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight, new Typeface("Verdana"), 12.0 * scaling, Brushes.Black);
+            FormattedText jwojcaTest_txt = new FormattedText(JwojcaTest, System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight, new Typeface("Verdana"), 12.0 * scaling, Brushes.Black);
 
-            switch (JwojcaTest)
+            /*switch (JwojcaTest)
             {
                 case 1:
                     jwojcaTest_txt = new FormattedText("Angry", System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight, new Typeface("Verdana"), 12.0 * scaling, Brushes.Black);
@@ -261,7 +261,7 @@ namespace OpenFaceOffline
                 default:
                     jwojcaTest_txt = new FormattedText("Other", System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight, new Typeface("Verdana"), 12.0 * scaling, Brushes.Black);
                     break;
-            }
+            }*/
 
 
             dc.DrawText(jwojcaTest_txt, new Point((ActualWidth / 2) - fps_width / 2, 0));
@@ -287,7 +287,7 @@ namespace OpenFaceOffline
         public List<List<Point>> OverlayEyePoints { get; set; }
         public List<double> FaceScale { get; set; }
 
-        public double JwojcaTest { get; set; }
+        public String JwojcaTest { get; set; }
 
         public List<double> Confidence { get; set; }
         public double FPS { get; set; }

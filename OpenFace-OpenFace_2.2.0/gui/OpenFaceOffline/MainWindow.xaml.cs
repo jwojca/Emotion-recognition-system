@@ -616,38 +616,118 @@ namespace OpenFaceOffline
                     var auC = face_analyser.GetCurrentAUsClass();
                     var auR = face_analyser.GetCurrentAUsReg();
 
-                    if (auR["AU12"] <= 1.5)
-                        if (auC["AU07"] < 0.5)
-                            if (auC["AU05"] < 0.5)
-                                if (auR["AU06"] < 0.475)
-                                    if (auC["AU04"] < 0.5)
-                                        overlay_image.JwojcaTest = 5; //neutral
-                                    else
-                                        overlay_image.JwojcaTest = 6; //sad
-                                else
-                                    if (auC["AU15"] < 0.5)
-                                    overlay_image.JwojcaTest = 6; //sad
-                                else
-                                    overlay_image.JwojcaTest = 5; //neutral
-                            else
-                                if (auC["AU10"] < 0.5)
-                                    if (auR["AU07"] < 0.365)
-                                        if (auC["AU17"] < 0.5)
-                                            if (auR["AU10"] < 0.475)
-                                                overlay_image.JwojcaTest = 5; //neutral
-                                            else
-                                                overlay_image.JwojcaTest = 3; //fear
-                                        else
-                                            overlay_image.JwojcaTest = 7; //surprise
-                                    else
-                                         overlay_image.JwojcaTest = 7; //surprise
-                                else
-                                     overlay_image.JwojcaTest = 3;
-                            else
-                                ;//nothing yet
-                        else
-                            overlay_image.JwojcaTest = 4;
+                    //overlay_image.JwojcaTest = "Happy";
+                
 
+                    if (auR["AU12"] <= 1.5)
+                    {
+                        if(auC["AU07"] < 0.5)
+                        {
+                            if (auC["AU05"] < 0.5)
+                            {
+                                if (auR["AU06"] <= 0.475)
+                                {
+                                    if (auC["AU04"] < 0.5)
+                                    {
+                                        overlay_image.JwojcaTest = "Neutral";
+                                    }
+                                    else
+                                    {
+                                        overlay_image.JwojcaTest = "Sad";
+                                    }
+                                }
+                                else
+                                {
+                                    if (auC["AU15"] < 0.5)
+                                    {
+                                        overlay_image.JwojcaTest = "Sad";
+                                    }
+                                    else
+                                    {
+                                        overlay_image.JwojcaTest = "Neutral";
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (auC["AU10"] < 0.5)
+                                {
+                                    if (auR["AU07"] <= 0.365)
+                                    {
+                                        overlay_image.JwojcaTest = "Surprise";
+                                    }
+                                    else
+                                    {
+                                        if (auC["AU17"] < 0.5)
+                                        {
+                                            if (auR["AU10"] <= 0.475)
+                                            {
+                                                overlay_image.JwojcaTest = "Neutral";
+                                            }
+                                            else
+                                            {
+                                                overlay_image.JwojcaTest = "Fear";
+                                            }
+                                        }
+                                        else
+                                        {
+                                            overlay_image.JwojcaTest = "Surprise";
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    overlay_image.JwojcaTest = "Fear";
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (auR["AU10"] <= 0.93)
+                            {
+                                if (auC["AU04"] < 0.5)
+                                {
+                                    overlay_image.JwojcaTest = "Neutral";
+                                }
+                                else
+                                {
+                                    if (auC["AU10"] < 0.5)
+                                    {
+                                        overlay_image.JwojcaTest = "Sad";
+                                    }
+                                    else
+                                    {
+                                        overlay_image.JwojcaTest = "Angry";
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (auR["AU07"] <= 1.535)
+                                {
+                                    overlay_image.JwojcaTest = "Angry";
+                                }
+                                else
+                                {
+                                    if (auR["AU25"] <= 1.81)
+                                    {
+                                        overlay_image.JwojcaTest = "Disgust";
+                                    }
+                                    else
+                                    {
+                                        overlay_image.JwojcaTest = "Angry";
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        overlay_image.JwojcaTest = "Happy";
+                    }
+
+                        
+                            
 
 
 
