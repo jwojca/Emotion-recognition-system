@@ -648,6 +648,7 @@ namespace OpenFaceOffline
 
               
                     //Decision tree
+                    //au12 1.5
                     if (auR["AU12"] <= 1.5)
                     {
                         if (auC["AU07"] < 0.5)
@@ -758,7 +759,7 @@ namespace OpenFaceOffline
                     //increment of predicted emotion
                     ++emotionsCount[emotion];
 
-                    uint numberOfFrames = 10;
+                    uint numberOfFrames = 5;
 
                     
                     if(frameCount % numberOfFrames == 0)
@@ -776,8 +777,7 @@ namespace OpenFaceOffline
                         emotionsCount["Neutral"] = 0;
                         emotionsCount["Sad"] = 0;
                         emotionsCount["Surprise"] = 0;
-
-                        
+                        frameCount = 0;
 
                     }
 
