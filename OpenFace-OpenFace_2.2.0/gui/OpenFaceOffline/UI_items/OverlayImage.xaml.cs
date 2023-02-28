@@ -233,20 +233,35 @@ namespace OpenFaceOffline
 
             //jwojca emotion text
             dc.DrawRoundedRectangle(Brushes.WhiteSmoke, new Pen(Brushes.Black, 0.5 * scaling), new Rect((ActualWidth/2) - fps_width/2, 0, fps_width, fps_height), 3.0 * scaling, 3.0 * scaling);
-            FormattedText jwojcaTest_txt = new FormattedText("Val: " + (int)JwojcaTest, System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight, new Typeface("Verdana"), 12.0 * scaling, Brushes.Black);
+            FormattedText jwojcaTest_txt; // = new FormattedText("Val: " + (int)JwojcaTest, System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight, new Typeface("Verdana"), 12.0 * scaling, Brushes.Black);
 
-            /*switch (JwojcaTest)
+            switch (JwojcaTest)
             {
                 case 1:
-                    jwojcaTest_txt = new FormattedText("Happy", System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight, new Typeface("Verdana"), 12.0 * scaling, Brushes.Black);
+                    jwojcaTest_txt = new FormattedText("Angry", System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight, new Typeface("Verdana"), 12.0 * scaling, Brushes.Black);
                     break;
                 case 2:
+                    jwojcaTest_txt = new FormattedText("Disgust", System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight, new Typeface("Verdana"), 12.0 * scaling, Brushes.Black);
+                    break;
+                case 3:
+                    jwojcaTest_txt = new FormattedText("Fear", System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight, new Typeface("Verdana"), 12.0 * scaling, Brushes.Black);
+                    break;
+                case 4:
+                    jwojcaTest_txt = new FormattedText("Happy", System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight, new Typeface("Verdana"), 12.0 * scaling, Brushes.Black);
+                    break;
+                case 5:
+                    jwojcaTest_txt = new FormattedText("Neutral", System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight, new Typeface("Verdana"), 12.0 * scaling, Brushes.Black);
+                    break;
+                case 6:
                     jwojcaTest_txt = new FormattedText("Sad", System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight, new Typeface("Verdana"), 12.0 * scaling, Brushes.Black);
                     break;
-                default:
-                    jwojcaTest_txt = new FormattedText("Surprised" + (int)JwojcaTest, System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight, new Typeface("Verdana"), 12.0 * scaling, Brushes.Black);
+                case 7:
+                    jwojcaTest_txt = new FormattedText("Surprise", System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight, new Typeface("Verdana"), 12.0 * scaling, Brushes.Black);
                     break;
-            }*/
+                default:
+                    jwojcaTest_txt = new FormattedText("Other", System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight, new Typeface("Verdana"), 12.0 * scaling, Brushes.Black);
+                    break;
+            }
 
 
             dc.DrawText(jwojcaTest_txt, new Point((ActualWidth / 2) - fps_width / 2, 0));

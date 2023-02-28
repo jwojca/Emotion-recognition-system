@@ -143,6 +143,7 @@ def main():
 		plt.figure(figsize=(25, 25))
 		plot_tree(clf_entropy, filled=True, class_names=classList, feature_names=featureList)
 		plt.title("Decision tree - entropy")
+		
 
 		plt.show()
 

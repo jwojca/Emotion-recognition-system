@@ -613,10 +613,46 @@ namespace OpenFaceOffline
                     overlay_image.FaceScale.Add(scale);
 
 
-                    var au_classes = face_analyser.GetCurrentAUsClass();
-                    double value = au_classes["AU01"];
+                    var auC = face_analyser.GetCurrentAUsClass();
+                    var auR = face_analyser.GetCurrentAUsReg();
 
-                    overlay_image.JwojcaTest = value;
+                    if (auR["AU12"] <= 1.5)
+                        if (auC["AU07"] < 0.5)
+                            if (auC["AU05"] < 0.5)
+                                if (auR["AU06"] < 0.475)
+                                    if (auC["AU04"] < 0.5)
+                                        overlay_image.JwojcaTest = 5; //neutral
+                                    else
+                                        overlay_image.JwojcaTest = 6; //sad
+                                else
+                                    if (auC["AU15"] < 0.5)
+                                    overlay_image.JwojcaTest = 6; //sad
+                                else
+                                    overlay_image.JwojcaTest = 5; //neutral
+                            else
+                                if (auC["AU10"] < 0.5)
+                                    if (auR["AU07"] < 0.365)
+                                        if (auC["AU17"] < 0.5)
+                                            if (auR["AU10"] < 0.475)
+                                                overlay_image.JwojcaTest = 5; //neutral
+                                            else
+                                                overlay_image.JwojcaTest = 3; //fear
+                                        else
+                                            overlay_image.JwojcaTest = 7; //surprise
+                                    else
+                                         overlay_image.JwojcaTest = 7; //surprise
+                                else
+                                     overlay_image.JwojcaTest = 3;
+                            else
+                                ;//nothing yet
+                        else
+                            overlay_image.JwojcaTest = 4;
+
+
+
+
+
+
 
                     //var data_labels = au_regs.Keys.ToList();
                     //data_labels.Sort();
