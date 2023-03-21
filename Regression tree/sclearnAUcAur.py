@@ -19,10 +19,10 @@ import matplotlib.pyplot as plt
 from sklearn.inspection import DecisionBoundaryDisplay
 
 plotOn = True
-loopingOn = False
+loopingOn = True
 
-trainCSV = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\trainAUcAUr.csv'
-testCSV = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\testAUcAUr.csv'
+trainCSV = r'C:\Users\hwojc\Desktop\Diplomka\Open Face\Excel data\Excel data augmented\train 15_03_2023\train_AuAr.csv'
+testCSV =  r'C:\Users\hwojc\Desktop\Diplomka\Open Face\Excel data\Excel data augmented\test 15_03_2023\test_AuAr.csv'
 
 classList = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
 featureList = ['AU01_r', 'AU02_r', 'AU04_r', 'AU05_r', 'AU06_r', 'AU07_r', 'AU09_r',
@@ -91,14 +91,9 @@ def prediction(X_test, clf_object):
 # Function to calculate accuracy
 def cal_accuracy(y_test, y_pred):
 	
-	print("Confusion Matrix: \n",
-		confusion_matrix(y_test, y_pred))
-	
-	print ("Accuracy : ",
-	accuracy_score(y_test,y_pred)*100)
-	
-	print("Report : ",
-	classification_report(y_test, y_pred))
+	print("Confusion Matrix: \n", confusion_matrix(y_test, y_pred))
+	print ("Accuracy : ", accuracy_score(y_test,y_pred)*100)
+	print("Report : \n",classification_report(y_test, y_pred))
 	acc = accuracy_score(y_test,y_pred)*100
 	return acc
 
@@ -109,25 +104,36 @@ def main():
 	trainData, testData = importdata()
 	X_train, X_test, y_train, y_test = loaddataset(trainData, testData)
 	clf_gini = train_using_gini(X_train, X_test, y_train)
+	maxAcc = -1
+	bestPair = ['0', '0']
 
 
 	if(loopingOn):
-		depthLow= 1
-		depthHigh = 15
-		sampleLeafLow = 10
-		sampleLeafHigh = 50
+		depthLow= 5
+		depthHigh = 7
+		sampleLeafLow = 500
+		sampleLeafHigh = 600
+		step = 10
 
 		depthRange = depthHigh - depthLow
 		sampleLeafRange = sampleLeafHigh - sampleLeafLow
+		recallSumMax = -1
 		
-		maxAcc = -1
-		bestPair = ['0', '0']
+
 		for i in range(depthRange):
-			for j in range(sampleLeafRange):
+			for j in range(0, sampleLeafRange, step):
+				print(maxAcc)
+
 				clf_entropy = train_using_entropy(X_train, X_test, y_train, depthLow + i, sampleLeafLow + j)
 				print("Results Using Entropy:\nMaxDepth: ", depthLow + i, ", MaxSampleLeaf: ", sampleLeafLow + j)
 				y_pred_entropy = prediction(X_test, clf_entropy)
 				acc= cal_accuracy(y_test, y_pred_entropy)
+
+				recallSum = 0
+				report = classification_report(y_test, y_pred_entropy, output_dict = True)
+				for emotionClass in classList:
+					recallSum = recallSum + report[emotionClass]['recall']
+
 				if(acc > maxAcc):
 					maxAcc = acc
 					bestPair[0] = depthLow + i
@@ -136,9 +142,12 @@ def main():
 		print("Max accuracy was: ", maxAcc, "with ", bestPair)
 	#plot
 	if plotOn:
-		clf_entropy = train_using_entropy(X_train, X_test, y_train, 7, 37)
+		clf_entropy = train_using_entropy(X_train, X_test, y_train, bestPair[0], bestPair[1])
 		y_pred_entropy = prediction(X_test, clf_entropy)
 		acc= cal_accuracy(y_test, y_pred_entropy)
+		
+
+		
 
 		plt.figure(figsize=(25, 25))
 		plot_tree(clf_entropy, filled=True, class_names=classList, feature_names=featureList)

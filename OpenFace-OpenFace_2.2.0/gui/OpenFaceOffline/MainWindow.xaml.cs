@@ -649,7 +649,7 @@ namespace OpenFaceOffline
               
                     //Decision tree
                     //au12 1.5
-                    if (auR["AU12"] <= 1.5)
+                    if (auR["AU12"] <= 1.0)
                     {
                         if (auC["AU07"] < 0.5)
                         {
