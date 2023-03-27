@@ -2,8 +2,8 @@
 import cv2
 import os
 from deepface import DeepFace
-path = r'C:\Users\hwojc\Desktop\Microsoft dataset\Surprise'
-correctEmotion = 'surprise'
+path = r'C:\Users\hwojc\Desktop\images\train\angry'
+correctEmotion = 'angry'
 
 totalClassification = 0
 angryClassification = 0
@@ -25,6 +25,7 @@ for images in os.listdir(path):
          dominantEmotion = result['dominant_emotion']
          dominantEmotionPct = result['emotion'][result['dominant_emotion']]
          print(dominantEmotion, ":",  dominantEmotionPct, "%")
+         print(result)
          
          secondDominantEmotion = result['second_dominant_emotion']
          secondDominantEmotionPct =  result['emotion'][result['second_dominant_emotion']]

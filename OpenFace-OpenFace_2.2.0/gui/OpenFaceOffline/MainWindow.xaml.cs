@@ -578,6 +578,18 @@ namespace OpenFaceOffline
                     var au_classes = face_analyser.GetCurrentAUsClass();
                     var au_regs = face_analyser.GetCurrentAUsReg();
 
+                    /*double headDownVal;
+                    int pitch = (int)(pose[3] * 180 / Math.PI + 0.5);
+                    if (pitch > 17)
+                        headDownVal = 1.0;
+                    else
+                        headDownVal = 0.0;
+
+
+
+
+                    au_classes.Add("AU54 - Head Down", headDownVal);*/
+
                     auClassGraph.Update(au_classes);
 
                     var au_regs_scaled = new Dictionary<String, double>();
@@ -644,9 +656,13 @@ namespace OpenFaceOffline
 
                     string emotion;
 
-                   
+                    
 
-              
+
+
+
+                    
+
                     //Decision tree
                     //au12 1.5
                     if (auR["AU12"] <= 1.0)
@@ -756,6 +772,12 @@ namespace OpenFaceOffline
                         emotion = "Happy";
                     }
 
+                    int pitch = (int)(pose[3] * 180 / Math.PI + 0.5);
+                    if (pitch > 20)
+                    {
+                        emotion = "Shame";
+                    }
+                       
                     //increment of predicted emotion
                     ++emotionsCount[emotion];
 
@@ -777,11 +799,18 @@ namespace OpenFaceOffline
                         emotionsCount["Neutral"] = 0;
                         emotionsCount["Sad"] = 0;
                         emotionsCount["Surprise"] = 0;
+                        emotionsCount["Shame"] = 0;
                         frameCount = 0;
-
+                
                     }
 
-                    
+
+                    Console.WriteLine(emotion);
+
+
+
+
+
 
 
 

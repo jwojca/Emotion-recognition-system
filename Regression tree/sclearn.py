@@ -21,17 +21,14 @@ from sklearn.inspection import DecisionBoundaryDisplay
 plotOn = True
 loopingOn = True
 
-trainCSV = r'C:\Users\hwojc\Desktop\Diplomka\Open Face\Excel data\Excel data augmented\train 15_03_2023\train_AuAr.csv'
-testCSV =  r'C:\Users\hwojc\Desktop\Diplomka\Open Face\Excel data\Excel data augmented\test 15_03_2023\test_AuAr.csv'
+trainCSV = r'C:\Users\hwojc\Desktop\Diplomka\Open Face\Excel data\Excel data augmented\test 15_03_2023\test_highConf_AuAr_withoutDisgust.csv'
+testCSV =  r'C:\Users\hwojc\Desktop\Diplomka\Open Face\Excel data\Excel data augmented\train 15_03_2023\train_highConf_AuAr_withoutDisgust.csv'
 
-classList = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
+#classList = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
+classList = ['Angry', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
+#classList = ['Angry', 'Fear', 'Happy', 'Sad', 'Surprise']
+#classList = ['Angry', 'Fear', 'Sad', 'Surprise']
 
-featureList = ['AU01_r', 'AU02_r', 'AU04_r', 'AU05_r', 'AU06_r', 'AU07_r', 'AU09_r',
- 			   'AU10_r', 'AU12_r', 'AU14_r', 'AU15_r', 'AU17_r', 'AU20_r', 'AU23_r',
- 			   'AU25_r', 'AU26_r', 'AU45_r',
-	           'AU01_c', 'AU02_c', 'AU04_c', 'AU05_c', 'AU06_c', 'AU07_c', 'AU09_c',
- 			   'AU10_c', 'AU12_c', 'AU14_c', 'AU15_c', 'AU17_c', 'AU20_c', 'AU23_c',
- 			   'AU25_c', 'AU26_c', 'AU28_c', 'AU45_c']
 
 # Function importing Dataset
 def importdata():
@@ -39,29 +36,31 @@ def importdata():
 	testData = pd.read_csv(testCSV, sep= ';', header=None)
 	
 	# Printing the dataset obseravtions
-	#print ("Dataset: ", trainData.head())
-	#print ("Dataset: ", testData.head())
+	print ("Dataset: ", trainData.head())
+	print ("Dataset: ", testData.head())
 
 	return trainData, testData
 
 # Function to load the dataset
 def loaddataset(trainData, testData):
 
+	rows, cols = trainData.shape
+	featureList = trainData.values[0, 1:cols-1]
 	# Separating the target variable
-	X_train = trainData.values[1:len(trainData), 1:35]
-	y_train = trainData.values[1:len(trainData):, 36]
+	X_train = trainData.values[1:rows, 1:cols-1]
+	y_train = trainData.values[1:rows:, cols-1]
 
-	X_test = testData.values[1:len(testData), 1:35]
-	y_test = testData.values[1:len(testData):, 36]
+	X_test = testData.values[1:len(testData), 1:cols-1]
+	y_test = testData.values[1:len(testData):, cols-1]
 	
-	return X_train, X_test, y_train, y_test
+	return X_train, X_test, y_train, y_test, featureList
 	
 # Function to perform training with giniIndex.
-def train_using_gini(X_train, X_test, y_train):
+def train_using_gini(X_train, X_test, y_train, maxDepth, minSamplesLeaf):
 
 	# Creating the classifier object
 	clf_gini = DecisionTreeClassifier(criterion = "gini",
-			random_state = 100,max_depth=3, min_samples_leaf=5)
+			random_state = 100,max_depth= maxDepth, min_samples_leaf= minSamplesLeaf)
 
 	# Performing training
 	clf_gini.fit(X_train, y_train)
@@ -103,18 +102,17 @@ def main():
 	
 	# Building Phase
 	trainData, testData = importdata()
-	X_train, X_test, y_train, y_test = loaddataset(trainData, testData)
-	clf_gini = train_using_gini(X_train, X_test, y_train)
+	X_train, X_test, y_train, y_test, featureList = loaddataset(trainData, testData)
 	maxAcc = -1
 	bestPair = ['0', '0']
 
 
 	if(loopingOn):
 		depthLow= 5
-		depthHigh = 30
-		sampleLeafLow = 500
-		sampleLeafHigh = 550
-		step = 25
+		depthHigh = 15
+		sampleLeafLow = 5
+		sampleLeafHigh = 80
+		step = 5
 
 		depthRange = depthHigh - depthLow
 		sampleLeafRange = sampleLeafHigh - sampleLeafLow
@@ -126,14 +124,15 @@ def main():
 				print(maxAcc)
 
 				clf_entropy = train_using_entropy(X_train, X_test, y_train, depthLow + i, sampleLeafLow + j)
+				#clf_entropy = train_using_gini(X_train, X_test, y_train, depthLow + i, sampleLeafLow + j)
 				print("Results Using Entropy:\nMaxDepth: ", depthLow + i, ", MaxSampleLeaf: ", sampleLeafLow + j)
 				y_pred_entropy = prediction(X_test, clf_entropy)
 				acc= cal_accuracy(y_test, y_pred_entropy)
 
 				recallSum = 0
-				report = classification_report(y_test, y_pred_entropy, output_dict = True)
-				for emotionClass in classList:
-					recallSum = recallSum + report[emotionClass]['recall']
+				#report = classification_report(y_test, y_pred_entropy, output_dict = True)
+				#for emotionClass in classList:
+				#	recallSum = recallSum + report[emotionClass]['recall']
 
 				if(acc > maxAcc):
 					maxAcc = acc
@@ -144,6 +143,7 @@ def main():
 	#plot
 	if plotOn:
 		clf_entropy = train_using_entropy(X_train, X_test, y_train, bestPair[0], bestPair[1])
+		#clf_entropy = train_using_entropy(X_train, X_test, y_train, 6, 59)
 		y_pred_entropy = prediction(X_test, clf_entropy)
 		acc= cal_accuracy(y_test, y_pred_entropy)
 		
@@ -151,7 +151,7 @@ def main():
 		
 
 		plt.figure(figsize=(25, 25))
-		plot_tree(clf_entropy, filled=True, class_names=classList, feature_names=featureList)
+		plot_tree(clf_entropy, filled=True, class_names=classList, feature_names= featureList)
 		plt.title("Decision tree - entropy")
 		
 
