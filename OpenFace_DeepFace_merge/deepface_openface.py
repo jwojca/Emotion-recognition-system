@@ -17,35 +17,38 @@ imageDirPath  = r"C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\M
 outDir = r"C:\Users\hwojc\Desktop\Diplomka\Open Face\OpenFace_2.2.0_win_x64\processed"
 
 outputFilePath = outDir + r"\angry.csv"
-last_modified_time = 0
+lastPosition = 0
 
 start = time.time()
 # Run FaceLandmarkImg.exe with image file as argument
 #process = subprocess.Popen([exePath, "-fdir", imageDirPath , "-aus","-out_dir", outDir], stdout=subprocess.PIPE)
 process = subprocess.Popen([exePath, "-fdir", imageDirPath , "-aus","-out_dir", outDir])
 
-while process.poll() is None:
-    # Do something else while the process is running
-    print("Process is running...")
+while True:
     try:
-        # Get the current modified time of the file
-        modified_time = os.path.getmtime(outputFilePath)
+        # Get the current size of the file
+        currentSize = os.path.getsize(outputFilePath)
         
-        # Check if the file has been modified since we last read it
-        if modified_time > last_modified_time:
-            with open(outputFilePath, 'r') as csv_file:
-                reader = csv.reader(csv_file)
-                # Process the contents of the CSV file
+        # Check if the file has grown since we last read it
+        if currentSize > lastPosition:
+            with open(outputFilePath, 'r') as csvFile:
+                # Move the file pointer to the last position
+                csvFile.seek(lastPosition)
+                
+                # Create a new CSV reader object
+                reader = csv.reader(csvFile)
+                
+                # Process the new data in the file
                 for row in reader:
                     # Do something with the row data
                     print(row)
-                    
-            # Update the last modified time
-            last_modified_time = modified_time
+                
+                # Update the last position to the current size of the file
+                lastPosition = currentSize
         
         # Wait for a short time before checking the file again
-        time.sleep(1)
-    
+        time.sleep(0.1)
+        
     except FileNotFoundError:
         # Handle the case where the file doesn't exist yet
         time.sleep(1)
