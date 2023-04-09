@@ -7,32 +7,33 @@ faceDetPath = r'C:\Users\hwojc\Desktop\Diplomka\Repo\OpenFace_DeepFace_merge\haa
 faceDetector = cv2.CascadeClassifier(faceDetPath)
 landmarkDetector = dlib.get_frontal_face_detector()
 
-def detect_AUs(image_path, face_cascade_path, landmark_detector_path):
-    # Load face detector and landmark detector
-    face_cascade = cv2.CascadeClassifier(face_cascade_path)
-    landmark_detector = dlib.shape_predictor(landmark_detector_path)
+# Define the function to detect AUs
+def detect_AUs(image):
+    # Convert the image to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    # Read the image
-    img = cv2.imread(image_path)
+    # Detect faces using the Haar cascade
+    faces = faceDetector.detectMultiScale(gray, 1.3, 5)
 
-    # Convert to grayscale
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    # Detect faces
-    faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-
-    # Detect Action Units for each face
+    # Loop through the faces and detect landmarks
     for (x, y, w, h) in faces:
-        # Detect landmarks for the face
-        rect = dlib.rectangle(int(x), int(y), int(x+w), int(y+h))
-        landmarks = landmark_detector(gray, rect)
-        
-        # Use the detected landmarks to detect action units
-        # ... your code here ...
-    
-    # Display the output
-    cv2.imshow('img', img)
-    cv2.waitKey()
+        # Convert the face region to a Dlib rectangle
+        rect = dlib.rectangle(int(x), int(y), int(x + w), int(y + h))
+
+        # Detect the facial landmarks
+        landmarks = landmarkDetector(gray, rect)
+
+        # Extract the features from the landmarks
+        features = extract_features(landmarks)
+
+        # Perform AU detection using the features
+        AUs = detect_AU(features)
+
+        # Return the AUs for this face
+        return AUs
+
+    # If no faces were detected, return an empty array
+    return []
 
 # Define the function to extract facial features from landmarks
 def extract_features(landmarks):
