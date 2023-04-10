@@ -70,21 +70,25 @@ def rotation(img, maxAngle):
     img = cv2.warpAffine(img, M, (w, h))
     return img
 
-inputDir = r'C:\Users\hwojc\Desktop\Diplomka\AffectNet\Train\surprise'
-outputDir = r'C:\Users\hwojc\Desktop\Diplomka\AffectNet\Train\surprise\augmented'
+def toGray(img):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    return img
+
+inputDir = r'C:\Users\hwojc\Desktop\test\aug'
+outputDir = r'C:\Users\hwojc\Desktop\test\aug_out'
 
 maxAngle = 6
 maxBrightness = 1.5
 minBrightness = 0.5
 
-origOn = True
-flipOn = True
-brightnessOn = True
+origOn = False
+flipOn = False
+brightnessOn = False
 channelShiftOn = False
 grayOn = True
 hShiftOn = False
-squeezeOn = True
-expandOn = True
+squeezeOn = False
+expandOn = False
 
 
 for images in os.listdir(inputDir):
@@ -131,7 +135,7 @@ for images in os.listdir(inputDir):
             cv2.imwrite(os.path.join(outputDir, filename), imgChannShift) 
 
         if(grayOn):
-            imgGrayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            imgGrayscale = toGray(img)
             imgGrayscale = rotation(imgGrayscale, maxAngle)
             filename = filenameBase + '_Gray' + '.png'
             cv2.imwrite(os.path.join(outputDir, filename), imgGrayscale) 
