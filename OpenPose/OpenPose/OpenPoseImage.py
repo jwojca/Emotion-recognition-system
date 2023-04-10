@@ -31,6 +31,8 @@ cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     raise IOError("Cannot open webcam")
 
+net = cv2.dnn.readNetFromCaffe(protoFile, weightsFile)
+
 #frame = cv2.imread(args.image_file)
 while True:
     frameRecieved, frame = cap.read()
@@ -39,7 +41,7 @@ while True:
     frameHeight = frame.shape[0]
     threshold = 0.1
 
-    net = cv2.dnn.readNetFromCaffe(protoFile, weightsFile)
+    
 
     if args.device == "cpu":
         net.setPreferableBackend(cv2.dnn.DNN_TARGET_CPU)
