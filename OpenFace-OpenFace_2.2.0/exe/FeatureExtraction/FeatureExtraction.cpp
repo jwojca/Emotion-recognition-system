@@ -198,6 +198,8 @@ int main(int argc, char **argv)
 			// Work out the pose of the head from the tracked model
 			cv::Vec6d pose_estimate = LandmarkDetector::GetPose(face_model, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy);
 
+			std::cout << "Feature extraction running..." << std::endl;
+
 			// Keeping track of FPS
 			fps_tracker.AddFrame();
 
