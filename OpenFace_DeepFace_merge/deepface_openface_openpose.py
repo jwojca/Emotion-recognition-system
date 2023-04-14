@@ -11,6 +11,21 @@ import argparse
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 
+import numpy as np
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report
+
+from sklearn.datasets import load_iris
+from sklearn import tree
+from sklearn.tree import plot_tree
+
+import matplotlib.pyplot as plt
+from sklearn.inspection import DecisionBoundaryDisplay
+from collections import Counter
+
 def deleteFolderContents(folder_path):
     """
     Deletes all files and subdirectories inside a folder, but not the folder itself.
@@ -107,6 +122,98 @@ def opGetPoints(output, frame, frameCopy):
             points.append(None)
     return points
 
+def ofGetDominantEmotion(data):
+    """
+    Returns the dominant emotion and its percentage in a given array of emotions.
+
+    Args:
+        data: A NumPy array of emotions.
+
+    Returns:
+        A tuple containing the dominant emotion (string) and its percentage (float).
+    """
+    counts = Counter(data)
+    dominantEmotion = counts.most_common(1)[0][0]
+    dominantPercentage = counts[dominantEmotion] / len(data) * 100
+    return (dominantEmotion, dominantPercentage)
+
+#Decision tree
+# Function importing Dataset
+def importdata():
+	trainData = pd.read_csv(trainCSV, sep= ';', header=None)
+	testData = pd.read_csv(testCSV, sep= ';', header=None)
+	
+	# Printing the dataset obseravtions
+	#print ("Dataset: ", trainData.head())
+	#print ("Dataset: ", testData.head())
+
+	return trainData, testData
+
+# Function to load the dataset
+def loaddataset(trainData, testData):
+
+	# Separating the target variable
+	X_train = trainData.values[1:len(trainData), 1:35]
+	y_train = trainData.values[1:len(trainData):, 36]
+
+	X_test = testData.values[1:len(testData), 1:35]
+	y_test = testData.values[1:len(testData):, 36]
+	
+	return X_train, X_test, y_train, y_test
+		
+# Function to perform training with entropy.
+def train_using_entropy(X_train, X_test, y_train, maxDepth, minSamplesLeaf):
+
+	# Decision tree with entropy
+	clf_entropy = DecisionTreeClassifier(
+			criterion = "entropy", random_state = 100,
+			max_depth = maxDepth, min_samples_leaf = minSamplesLeaf)
+
+	# Performing training
+	clf_entropy.fit(X_train, y_train)
+	return clf_entropy
+
+
+# Function to make predictions
+def prediction(X_test, clf_object):
+
+	# Predicton on test with giniIndex
+	y_pred = clf_object.predict(X_test)
+	#print("Predicted values:")
+	#print(y_pred)
+	return y_pred
+
+def cal_accuracy(y_test, y_pred):
+	
+	print("Confusion Matrix: \n", confusion_matrix(y_test, y_pred))
+	print ("Accuracy : ", accuracy_score(y_test,y_pred)*100)
+	print("Report : \n",classification_report(y_test, y_pred))
+	acc = accuracy_score(y_test,y_pred)*100
+	return acc
+
+trainCSV = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\trainAUcAUr.csv'
+testCSV =  r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\testAUcAUr.csv'
+
+classList = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
+
+featureList = ['AU01_r', 'AU02_r', 'AU04_r', 'AU05_r', 'AU06_r', 'AU07_r', 'AU09_r',
+ 			   'AU10_r', 'AU12_r', 'AU14_r', 'AU15_r', 'AU17_r', 'AU20_r', 'AU23_r',
+ 			   'AU25_r', 'AU26_r', 'AU45_r',
+	           'AU01_c', 'AU02_c', 'AU04_c', 'AU05_c', 'AU06_c', 'AU07_c', 'AU09_c',
+ 			   'AU10_c', 'AU12_c', 'AU14_c', 'AU15_c', 'AU17_c', 'AU20_c', 'AU23_c',
+ 			   'AU25_c', 'AU26_c', 'AU28_c', 'AU45_c']
+
+#train decision tree
+trainData, testData = importdata()
+X_train, X_test, y_train, y_test = loaddataset(trainData, testData)
+clf_entropy = train_using_entropy(X_train, X_test, y_train, 7, 37)
+y_pred_entropy = prediction(X_test, clf_entropy)
+acc= cal_accuracy(y_test, y_pred_entropy)
+
+
+
+
+#Open Pose
 MODE = "MPI"
 
 if MODE == "COCO":
@@ -160,6 +267,8 @@ if not os.path.exists(imageDirPath):
     os.makedirs(imageDirPath)
 
 
+
+
 while True:
 
     frameRecieved, frame = cap.read()
@@ -178,7 +287,7 @@ while True:
 
             if(imgSavedCount % 30 == 0):
                 #process = subprocess.run([exePath, "-fdir", imageDirPath , "-aus","-out_dir", outDir])
-                process = subprocess.Popen([exePath, "-fdir", imageDirPath , "-aus","-out_dir", outDir])
+                process = subprocess.Popen([exePath, "-fdir", imageDirPath , "-aus", "-tracked","-out_dir", outDir])
                 csvName = str(imgDirIndex) + '.csv'
                 outputFilePath = os.path.join(outDir, csvName)
                 imgDirIndex = imgDirIndex + 1
@@ -191,7 +300,14 @@ while True:
         except:
             frame = cv2.putText(frame,'Cannot detect face',(50,50), cv2.FONT_ITALIC, 1, (0,0,0), 2, cv2.LINE_4)
             #cv2.imshow('Video', frame)
-    
+
+        if gCheckProc:
+            if process.poll() == None:
+                checkCSV = False
+            else:
+                checkCSV = True
+                gCheckProc = False
+
         frameCopy = np.copy(frame)
         net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
         net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
@@ -208,29 +324,47 @@ while True:
         output = net.forward()
         points = opGetPoints(output, frame, frameCopy)
         frame = opDrawSkeleton(frame, points, POSE_PAIRS)
+
+        if checkCSV:
+            try:
+                ofData = pd.read_csv(outputFilePath, sep= ',', header=None)
+                rows, cols = ofData.shape
+                aus = ofData.values[1:rows, 5:cols-1]
+                #print(aus)
+                emPred = prediction(aus, clf_entropy)
+                dominantEm, dominantEmPct = ofGetDominantEmotion(emPred)
+                print(dominantEm, dominantEmPct)
+                frame = cv2.putText(frame,dominantEm, (300,50), cv2.FONT_ITALIC, 1, (0,0,255), 2, cv2.LINE_4)
+                """
+                with open(outputFilePath, 'r') as csvFile:         
+                    # Create a new CSV reader object
+                    reader = csv.reader(csvFile, delimiter = ",")
+                    # Process the new data in the file
+                    # Skip header row
+                    next(reader)
+                    # Load data into list of lists, selecting only columns from 5 to end-1
+                    data = [[row[i] for i in range(5, len(row)-1)] for row in reader]
+                    print(data)
+                
+                    for row in reader:
+                        # Do something with the row data
+                        print(row)         
+                    # Wait for a short time before checking the file again
+                    #time.sleep(0.1)
+            
+                """
+                
+            except FileNotFoundError:
+                # Handle the case where the file doesn't exist yet
+                #time.sleep(0.1)
+                print("CSV doesnt exist yet")
+    
         
         cv2.imshow('Output-Skeleton', frame)
 
     else:
         print("Frame not recieved")
-        
-    """
-    try:
-        with open(outputFilePath, 'r') as csvFile:         
-            # Create a new CSV reader object
-            reader = csv.reader(csvFile)
-            # Process the new data in the file
-            for row in reader:
-                # Do something with the row data
-                print(row)         
-        # Wait for a short time before checking the file again
-        #time.sleep(0.1)
-        
-    except FileNotFoundError:
-        # Handle the case where the file doesn't exist yet
-        #time.sleep(0.1)
-        print("CSV doesnt exist yet")
-    """
+    
     
 
     #Get key, if ESC, then end loop
