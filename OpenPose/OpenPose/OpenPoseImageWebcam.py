@@ -3,6 +3,16 @@ import time
 import numpy as np
 import math
 import argparse
+import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
+
+def angleFromVertical(p1, p2):
+    """Calculate the angle in degrees between the line connecting points p1 and p2
+    and the vertical axis."""
+    deltaY = p2[1] - p1[1]
+    deltaX = p2[0] - p1[0]
+    angle = math.atan2(deltaX, deltaY)
+    return -math.degrees(angle)
 
 imgPath = r'C:\Users\hwojc\Desktop\Diplomka\Repo\OpenPose\OpenPose\single.jpeg'
 
@@ -50,7 +60,7 @@ while True:
     elif args.device == "gpu":
         net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
         net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
-        print("Using GPU device")
+        #print("Using GPU device")
 
     t = time.time()
     # input image dimensions for the network
@@ -62,7 +72,7 @@ while True:
     net.setInput(inpBlob)
 
     output = net.forward()
-    print("time taken by network : {:.3f}".format(time.time() - t))
+    #print("time taken by network : {:.3f}".format(time.time() - t))
 
     H = output.shape[2]
     W = output.shape[3]
@@ -109,10 +119,25 @@ while True:
             # Calculate the midpoint
             midpoint = (pointArr0 + pointArr1) / 2
             center = tuple(np.round(midpoint).astype(int))
+            ellAngle = angleFromVertical(points[0], points[1])
             #cv2.circle(frame, center, round((diameter/2) * 1.2), (255, 0, 0), thickness = 2)
             center2 = tuple(np.round(points[1]).astype(int))
-            cv2.ellipse(frame, center, (int(diameter/1.5), int(diameter/1.2)), 0, 0, 360, (255, 0, 0), thickness = 2)
-            
+            cv2.ellipse(frame, center, (int(diameter/1.5), int(diameter/1.2)), ellAngle, 0, 360, (255, 0, 0), thickness = 2)
+
+            e = Ellipse((int(center[0]), int(center[1])), 2*int(diameter/1.5), 2*int(diameter/1.2), ellAngle)
+            rightWrist = points[4]
+            leftWrist = points[7]
+            if(rightWrist and not leftWrist):
+                if e.contains_point(rightWrist):
+                    print("Right hand in face area")
+            elif(leftWrist and not rightWrist):
+                if e.contains_point(leftWrist):
+                    print("Left hand in face area")
+            elif(rightWrist and leftWrist):
+                if e.contains_point(leftWrist) and e.contains_point(rightWrist):
+                    print("Both hands in face area")
+            else:
+                print("No hand in face area")
 
     #cv2.imshow('Output-Keypoints', frameCopy)
     cv2.imshow('Output-Skeleton', frame)
@@ -121,7 +146,7 @@ while True:
     #cv2.imwrite('Output-Keypoints.jpg', frameCopy)
     #cv2.imwrite('Output-Skeleton.jpg', frame)
 
-    print("Total time taken : {:.3f}".format(time.time() - t))
+    #print("Total time taken : {:.3f}".format(time.time() - t))
 
     #Get key, if ESC, then end loop
     c = cv2.waitKey(1)
