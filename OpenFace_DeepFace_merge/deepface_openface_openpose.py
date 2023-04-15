@@ -267,104 +267,108 @@ if not os.path.exists(imageDirPath):
     os.makedirs(imageDirPath)
 
 
-
+frameCount = 0
+skippedFrames = 10
+dfPredEm = "None"
+points = []
 
 while True:
 
     frameRecieved, frame = cap.read()
+   
     if frameRecieved:
-        try:
-            result = DeepFace.analyze(frame, actions = ['emotion'], enforce_detection= True)
-           
-            imgName = str(imgID) + '.jpg'
-            imgPath = os.path.join(imageDirPath, imgName)
-            cv2.imwrite(imgPath, frame)
-            imgSavedCount = imgSavedCount + 1
-            imgID = imgID + 1
+        frameCount = frameCount + 1
+        if frameCount % skippedFrames == 0:
+            try:
+                result = DeepFace.analyze(frame, actions = ['emotion'], enforce_detection= True)
+                dfPredEm = result['dominant_emotion']
+                imgName = str(imgID) + '.jpg'
+                imgPath = os.path.join(imageDirPath, imgName)
+                cv2.imwrite(imgPath, frame)
+                imgSavedCount = imgSavedCount + 1
+                imgID = imgID + 1
 
-            frame = cv2.putText(frame, result['dominant_emotion'],(50,50), cv2.FONT_ITALIC, 1, (0,0,0), 2, cv2.LINE_4)
-            frame = cv2.putText(frame, str(imgID), (50,100), cv2.FONT_ITALIC, 1, (0,0,0), 2)
+                if(imgSavedCount % 30 == 0):
+                    #process = subprocess.run([exePath, "-fdir", imageDirPath , "-aus","-out_dir", outDir])
+                    process = subprocess.Popen([exePath, "-fdir", imageDirPath , "-aus", "-tracked","-out_dir", outDir])
+                    csvName = str(imgDirIndex) + '.csv'
+                    outputFilePath = os.path.join(outDir, csvName)
+                    imgDirIndex = imgDirIndex + 1
+                    imgSavedCount = 0
+                    imageDirPath = os.path.join(imageDirPathBase, str(imgDirIndex))
+                    if not os.path.exists(imageDirPath):
+                        os.makedirs(imageDirPath)
+                    gCheckProc = True
+                #cv2.imshow('Video', frame)
+            except:
+                frame = cv2.putText(frame,'Cannot detect face',(50,50), cv2.FONT_ITALIC, 1, (0,0,0), 2, cv2.LINE_4)
+                #cv2.imshow('Video', frame)
 
-            if(imgSavedCount % 30 == 0):
-                #process = subprocess.run([exePath, "-fdir", imageDirPath , "-aus","-out_dir", outDir])
-                process = subprocess.Popen([exePath, "-fdir", imageDirPath , "-aus", "-tracked","-out_dir", outDir])
-                csvName = str(imgDirIndex) + '.csv'
-                outputFilePath = os.path.join(outDir, csvName)
-                imgDirIndex = imgDirIndex + 1
-                imgSavedCount = 0
-                imageDirPath = os.path.join(imageDirPathBase, str(imgDirIndex))
-                if not os.path.exists(imageDirPath):
-                    os.makedirs(imageDirPath)
-                gCheckProc = True
-            #cv2.imshow('Video', frame)
-        except:
-            frame = cv2.putText(frame,'Cannot detect face',(50,50), cv2.FONT_ITALIC, 1, (0,0,0), 2, cv2.LINE_4)
-            #cv2.imshow('Video', frame)
+            if gCheckProc:
+                if process.poll() == None:
+                    checkCSV = False
+                else:
+                    checkCSV = True
+                    gCheckProc = False
 
-        if gCheckProc:
-            if process.poll() == None:
-                checkCSV = False
-            else:
-                checkCSV = True
-                gCheckProc = False
+            
 
+            if checkCSV:
+                try:
+                    ofData = pd.read_csv(outputFilePath, sep= ',', header=None)
+                    rows, cols = ofData.shape
+                    aus = ofData.values[1:rows, 5:cols-1]
+                    #print(aus)
+                    emPred = prediction(aus, clf_entropy)
+                    dominantEm, dominantEmPct = ofGetDominantEmotion(emPred)
+                    print(dominantEm, dominantEmPct)
+                    frame = cv2.putText(frame,dominantEm, (300,50), cv2.FONT_ITALIC, 1, (0,0,255), 2, cv2.LINE_4)
+                    """
+                    with open(outputFilePath, 'r') as csvFile:         
+                        # Create a new CSV reader object
+                        reader = csv.reader(csvFile, delimiter = ",")
+                        # Process the new data in the file
+                        # Skip header row
+                        next(reader)
+                        # Load data into list of lists, selecting only columns from 5 to end-1
+                        data = [[row[i] for i in range(5, len(row)-1)] for row in reader]
+                        print(data)
+                    
+                        for row in reader:
+                            # Do something with the row data
+                            print(row)         
+                        # Wait for a short time before checking the file again
+                        #time.sleep(0.1)
+                
+                    """
+                    
+                except FileNotFoundError:
+                    # Handle the case where the file doesn't exist yet
+                    #time.sleep(0.1)
+                    print("CSV doesnt exist yet")
+        
         frameCopy = np.copy(frame)
         net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
         net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
-
-
-        t = time.time()
         # input image dimensions for the network
         inWidth = 240
         inHeight = 160
         inpBlob = cv2.dnn.blobFromImage(frame, 1.0 / 255, (inWidth, inHeight),
                                 (0, 0, 0), swapRB=False, crop=False)
-
         net.setInput(inpBlob)
         output = net.forward()
         points = opGetPoints(output, frame, frameCopy)
-        frame = opDrawSkeleton(frame, points, POSE_PAIRS)
 
-        if checkCSV:
-            try:
-                ofData = pd.read_csv(outputFilePath, sep= ',', header=None)
-                rows, cols = ofData.shape
-                aus = ofData.values[1:rows, 5:cols-1]
-                #print(aus)
-                emPred = prediction(aus, clf_entropy)
-                dominantEm, dominantEmPct = ofGetDominantEmotion(emPred)
-                print(dominantEm, dominantEmPct)
-                frame = cv2.putText(frame,dominantEm, (300,50), cv2.FONT_ITALIC, 1, (0,0,255), 2, cv2.LINE_4)
-                """
-                with open(outputFilePath, 'r') as csvFile:         
-                    # Create a new CSV reader object
-                    reader = csv.reader(csvFile, delimiter = ",")
-                    # Process the new data in the file
-                    # Skip header row
-                    next(reader)
-                    # Load data into list of lists, selecting only columns from 5 to end-1
-                    data = [[row[i] for i in range(5, len(row)-1)] for row in reader]
-                    print(data)
-                
-                    for row in reader:
-                        # Do something with the row data
-                        print(row)         
-                    # Wait for a short time before checking the file again
-                    #time.sleep(0.1)
-            
-                """
-                
-            except FileNotFoundError:
-                # Handle the case where the file doesn't exist yet
-                #time.sleep(0.1)
-                print("CSV doesnt exist yet")
-    
+        frame = opDrawSkeleton(frame, points, POSE_PAIRS)
+        frame = cv2.putText(frame, dfPredEm,(50,50), cv2.FONT_ITALIC, 1, (0,0,0), 2, cv2.LINE_4)
+        frame = cv2.putText(frame, str(frameCount), (50,100), cv2.FONT_ITALIC, 1, (0,0,0), 2)
         
         cv2.imshow('Output-Skeleton', frame)
-
+        
     else:
         print("Frame not recieved")
     
+  
     
 
     #Get key, if ESC, then end loop
