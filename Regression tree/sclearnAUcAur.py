@@ -21,8 +21,8 @@ from sklearn.inspection import DecisionBoundaryDisplay
 plotOn = True
 loopingOn = True
 
-trainCSV = r'C:\Users\hwojc\Desktop\Diplomka\Open Face\Excel data\Excel data augmented\train 15_03_2023\train_AuAr.csv'
-testCSV =  r'C:\Users\hwojc\Desktop\Diplomka\Open Face\Excel data\Excel data augmented\test 15_03_2023\test_AuAr.csv'
+trainCSV = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\trainAUcAUr.csv'
+testCSV =  r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\testAUcAUr.csv'
 
 classList = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
 
@@ -110,11 +110,11 @@ def main():
 
 
 	if(loopingOn):
-		depthLow= 5
-		depthHigh = 30
-		sampleLeafLow = 500
-		sampleLeafHigh = 550
-		step = 25
+		depthLow= 7
+		depthHigh = 8
+		sampleLeafLow = 30
+		sampleLeafHigh = 40
+		step = 1
 
 		depthRange = depthHigh - depthLow
 		sampleLeafRange = sampleLeafHigh - sampleLeafLow
@@ -145,6 +145,7 @@ def main():
 	if plotOn:
 		clf_entropy = train_using_entropy(X_train, X_test, y_train, bestPair[0], bestPair[1])
 		y_pred_entropy = prediction(X_test, clf_entropy)
+		print(y_pred_entropy)
 		acc= cal_accuracy(y_test, y_pred_entropy)
 		
 

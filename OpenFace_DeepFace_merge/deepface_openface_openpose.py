@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 from sklearn.inspection import DecisionBoundaryDisplay
 from collections import Counter
 
-import openPoseLib
+import openPose
 
 
 def deleteFolderContents(folder_path):
@@ -44,9 +44,10 @@ def deleteFolderContents(folder_path):
         except Exception as e:
             print(f"Failed to delete {file_path}. Reason: {e}")
 
+
+    """
 def angleFromVertical(p1, p2):
-    """Calculate the angle in degrees between the line connecting points p1 and p2
-    and the vertical axis."""
+
     deltaY = p2[1] - p1[1]
     deltaX = p2[0] - p1[0]
     angle = math.atan2(deltaX, deltaY)
@@ -124,6 +125,7 @@ def opGetPoints(output, frame, frameCopy):
         else :
             points.append(None)
     return points
+    """
 
 def ofGetDominantEmotion(data):
     """
@@ -277,6 +279,8 @@ net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
 net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 
 cap = cv2.VideoCapture(0)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
 if not cap.isOpened():
     raise IOError("Cannot open webcam")
 
@@ -336,7 +340,6 @@ while True:
 while True:
 
     frameRecieved, frame = cap.read()
-   
     if frameRecieved:
         frameCount = frameCount + 1
         if frameCount % skippedFrames == 0:
@@ -436,15 +439,15 @@ while True:
 
         frameCopy = np.copy(frame)
         # input image dimensions for the network
-        inWidth = 240
-        inHeight = 160
+        inWidth = 256
+        inHeight = 144
         inpBlob = cv2.dnn.blobFromImage(frame, 1.0 / 255, (inWidth, inHeight),
                                 (0, 0, 0), swapRB=False, crop=False)
         net.setInput(inpBlob)
         output = net.forward()
-        points = openPoseLib.GetPoints(output, frame, frameCopy)
+        points = openPose.GetPoints(output, frame, frameCopy)
 
-        frame = opDrawSkeleton(frame, points, POSE_PAIRS)
+        frame = openPose.DrawSkeleton(frame, points, POSE_PAIRS)
   
         frame = displayTableOnFrame(frame, dfPredEm, ofDominantEm, frameCount)
         """

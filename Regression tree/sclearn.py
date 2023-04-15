@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from sklearn.inspection import DecisionBoundaryDisplay
 
 plotOn = True
-loopingOn = True
+loopingOn = False
 
 trainCSV = r'C:\Users\hwojc\Desktop\Diplomka\Open Face\Excel data\Excel data augmented\test 15_03_2023\test_highConf_AuAr_withoutDisgust.csv'
 testCSV =  r'C:\Users\hwojc\Desktop\Diplomka\Open Face\Excel data\Excel data augmented\train 15_03_2023\train_highConf_AuAr_withoutDisgust.csv'
