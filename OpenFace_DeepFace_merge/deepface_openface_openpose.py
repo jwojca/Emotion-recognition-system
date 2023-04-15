@@ -27,6 +27,9 @@ from sklearn.inspection import DecisionBoundaryDisplay
 from collections import Counter
 
 import openPose
+import openFace
+import decTree
+
 
 
 def deleteFolderContents(folder_path):
@@ -43,158 +46,11 @@ def deleteFolderContents(folder_path):
                 os.rmdir(file_path)  # remove directory
         except Exception as e:
             print(f"Failed to delete {file_path}. Reason: {e}")
+ 
 
 
-    """
-def angleFromVertical(p1, p2):
-
-    deltaY = p2[1] - p1[1]
-    deltaX = p2[0] - p1[0]
-    angle = math.atan2(deltaX, deltaY)
-    return -math.degrees(angle)
-
-def opDrawSkeleton(frame, points, POSE_PAIRS):
-    # Draw Skeleton
-    for pair in POSE_PAIRS:
-        partA = pair[0]
-        partB = pair[1]
-
-        if points[partA] and points[partB]:
-            cv2.line(frame, points[partA], points[partB], (0, 255, 255), 2)
-            cv2.circle(frame, points[partA], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
-            
-        if points[0] and points[1]:
-            diameter = math.dist(points[0], points[1])
-            midPoint = [0, 0]
-            # Define two points
-            pointArr0 = np.array(points[0])
-            pointArr1 = np.array(points[1])
-
-            # Calculate the midpoint
-            midpoint = (pointArr0 + pointArr1) / 2
-            center = tuple(np.round(midpoint).astype(int))
-            ellAngle = angleFromVertical(points[0], points[1])
-            #cv2.circle(frame, center, round((diameter/2) * 1.2), (255, 0, 0), thickness = 2)
-            center2 = tuple(np.round(points[1]).astype(int))
-            cv2.ellipse(frame, center, (int(diameter/1.5), int(diameter/1.2)), ellAngle, 0, 360, (255, 0, 0), thickness = 2)
-
-            e = Ellipse((int(center[0]), int(center[1])), 2*int(diameter/1.5), 2*int(diameter/1.2), ellAngle)
-            rightWrist = points[4]
-            leftWrist = points[7]
-            if(rightWrist and not leftWrist):
-                if e.contains_point(rightWrist):
-                    print("Right hand in face area")
-            elif(leftWrist and not rightWrist):
-                if e.contains_point(leftWrist):
-                    print("Left hand in face area")
-            elif(rightWrist and leftWrist):
-                if e.contains_point(leftWrist) and e.contains_point(rightWrist):
-                    print("Both hands in face area")
-            else:
-                print("No hand in face area")
-    return frame
-
-def opGetPoints(output, frame, frameCopy):
-    frameWidth = frame.shape[1]
-    frameHeight = frame.shape[0]
-    threshold = 0.1
-     
-    H = output.shape[2]
-    W = output.shape[3]
-
-    # Empty list to store the detected keypoints
-    points = []
-
-    for i in range(nPoints):
-        # confidence map of corresponding body's part.
-        probMap = output[0, i, :, :]
-
-        # Find global maxima of the probMap.
-        minVal, prob, minLoc, point = cv2.minMaxLoc(probMap)
-        
-        # Scale the point to fit on the original image
-        x = (frameWidth * point[0]) / W
-        y = (frameHeight * point[1]) / H
-
-        if prob > threshold : 
-            cv2.circle(frameCopy, (int(x), int(y)), 8, (0, 255, 255), thickness=-1, lineType=cv2.FILLED)
-            cv2.putText(frameCopy, "{}".format(i), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, lineType=cv2.LINE_AA)
-
-            # Add the point to the list if the probability is greater than the threshold
-            points.append((int(x), int(y)))
-        else :
-            points.append(None)
-    return points
-    """
-
-def ofGetDominantEmotion(data):
-    """
-    Returns the dominant emotion and its percentage in a given array of emotions.
-
-    Args:
-        data: A NumPy array of emotions.
-
-    Returns:
-        A tuple containing the dominant emotion (string) and its percentage (float).
-    """
-    counts = Counter(data)
-    dominantEmotion = counts.most_common(1)[0][0]
-    dominantPercentage = counts[dominantEmotion] / len(data) * 100
-    return (dominantEmotion, dominantPercentage)
-
-#Decision tree
-# Function importing Dataset
-def importdata():
-	trainData = pd.read_csv(trainCSV, sep= ';', header=None)
-	testData = pd.read_csv(testCSV, sep= ';', header=None)
-	
-	# Printing the dataset obseravtions
-	#print ("Dataset: ", trainData.head())
-	#print ("Dataset: ", testData.head())
-
-	return trainData, testData
-
-# Function to load the dataset
-def loaddataset(trainData, testData):
-
-	# Separating the target variable
-	X_train = trainData.values[1:len(trainData), 1:35]
-	y_train = trainData.values[1:len(trainData):, 36]
-
-	X_test = testData.values[1:len(testData), 1:35]
-	y_test = testData.values[1:len(testData):, 36]
-	
-	return X_train, X_test, y_train, y_test
-		
-# Function to perform training with entropy.
-def train_using_entropy(X_train, X_test, y_train, maxDepth, minSamplesLeaf):
-
-	# Decision tree with entropy
-	clf_entropy = DecisionTreeClassifier(
-			criterion = "entropy", random_state = 100,
-			max_depth = maxDepth, min_samples_leaf = minSamplesLeaf)
-
-	# Performing training
-	clf_entropy.fit(X_train, y_train)
-	return clf_entropy
 
 
-# Function to make predictions
-def prediction(X_test, clf_object):
-
-	# Predicton on test with giniIndex
-	y_pred = clf_object.predict(X_test)
-	#print("Predicted values:")
-	#print(y_pred)
-	return y_pred
-
-def cal_accuracy(y_test, y_pred):
-	
-	print("Confusion Matrix: \n", confusion_matrix(y_test, y_pred))
-	print ("Accuracy : ", accuracy_score(y_test,y_pred)*100)
-	print("Report : \n",classification_report(y_test, y_pred))
-	acc = accuracy_score(y_test,y_pred)*100
-	return acc
 
 
 def displayTableOnFrame(frame, deepfaceOutput, openfaceOutput, numFrames):
@@ -228,27 +84,12 @@ def displayTableOnFrame(frame, deepfaceOutput, openfaceOutput, numFrames):
     return frame
 
 
-
-
-
-trainCSV = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\trainAUcAUr.csv'
-testCSV =  r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\testAUcAUr.csv'
-
-classList = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
-
-featureList = ['AU01_r', 'AU02_r', 'AU04_r', 'AU05_r', 'AU06_r', 'AU07_r', 'AU09_r',
- 			   'AU10_r', 'AU12_r', 'AU14_r', 'AU15_r', 'AU17_r', 'AU20_r', 'AU23_r',
- 			   'AU25_r', 'AU26_r', 'AU45_r',
-	           'AU01_c', 'AU02_c', 'AU04_c', 'AU05_c', 'AU06_c', 'AU07_c', 'AU09_c',
- 			   'AU10_c', 'AU12_c', 'AU14_c', 'AU15_c', 'AU17_c', 'AU20_c', 'AU23_c',
- 			   'AU25_c', 'AU26_c', 'AU28_c', 'AU45_c']
-
 #train decision tree
-trainData, testData = importdata()
-X_train, X_test, y_train, y_test = loaddataset(trainData, testData)
-clf_entropy = train_using_entropy(X_train, X_test, y_train, 7, 37)
-y_pred_entropy = prediction(X_test, clf_entropy)
-acc= cal_accuracy(y_test, y_pred_entropy)
+trainData, testData = decTree.importdata()
+X_train, X_test, y_train, y_test = decTree.loaddataset(trainData, testData)
+clf_entropy = decTree.train_using_entropy(X_train, X_test, y_train, 7, 37)
+y_pred_entropy = decTree.prediction(X_test, clf_entropy)
+acc = decTree.cal_accuracy(y_test, y_pred_entropy)
 
 
 
@@ -332,10 +173,6 @@ while True:
         print("No CSV files found.")
         time.sleep(1)
 
-     
-
-# wait for the subprocess to finish
-
 
 while True:
 
@@ -346,48 +183,9 @@ while True:
             try:
                 result = DeepFace.analyze(frame, actions = ['emotion'], enforce_detection= True)
                 dfPredEm = result['dominant_emotion']
-
-                """
-                if(imgSavedCount % 30 == 0):
-                    process = subprocess.Popen([exePath, "-fdir", imageDirPath , "-aus", "-tracked","-out_dir", outDir])
-                    csvName = str(imgDirIndex) + '.csv'
-                    outputFilePath = os.path.join(outDir, csvName)
-                    imgDirIndex = imgDirIndex + 1
-                    imgSavedCount = 0
-                    imageDirPath = os.path.join(imageDirPathBase, str(imgDirIndex))
-                    if not os.path.exists(imageDirPath):
-                        os.makedirs(imageDirPath)
-                    gCheckProc = True
-                """
             except:
                 dfPredEm = "Cannot detect face"
-                """
-            if gCheckProc:
-                
-                if process.poll() == None:
-                    checkCSV = False
-                else:
-                    checkCSV = True
-                    gCheckProc = False
-                """
-            
-            """
-            if checkCSV:
-                try:
-                    ofData = pd.read_csv(outputFilePath, sep= ',', header=None)
-                    rows, cols = ofData.shape
-                    aus = ofData.values[1:rows, 5:cols-1]
-                    #print(aus)
-                    emPred = prediction(aus, clf_entropy)
-                    dominantEm, dominantEmPct = ofGetDominantEmotion(emPred)
-                    print(dominantEm, dominantEmPct)
-                    frame = cv2.putText(frame,dominantEm, (300,50), cv2.FONT_ITALIC, 1, (0,0,255), 2, cv2.LINE_4)
-
-                except FileNotFoundError:
-                    # Handle the case where the file doesn't exist yet
-                    #time.sleep(0.1)
-                    print("CSV doesnt exist yet")
-            """
+         
             try:
                 # Get the current size of the file
                 currentSize = os.path.getsize(csvFilePath)
@@ -426,8 +224,8 @@ while True:
                             if avgConf < 0.5:
                                 ofDominantEm = "Low confidence"
                             else:
-                                emPred = prediction(aus, clf_entropy)
-                                ofDominantEm, dominantEmPct = ofGetDominantEmotion(emPred)
+                                emPred = decTree.prediction(aus, clf_entropy)
+                                ofDominantEm, dominantEmPct = openFace.GetDominantEmotion(emPred)
                                 print(ofDominantEm, dominantEmPct)
                        
 
