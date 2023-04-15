@@ -1,7 +1,7 @@
 import subprocess
 import pandas as pd
 import time
-import csv
+
 import os
 import cv2  
 from deepface import DeepFace
@@ -97,7 +97,7 @@ if not cap.isOpened():
 
 # Path to FaceLandmarkImg.exe and image file
 #exePath  = r"C:\Users\hwojc\Desktop\Diplomka\Open Face\OpenFace_2.2.0_win_x64\FeatureExtraction.exe"
-exePath  = r"C:\Users\hwojc\Desktop\Diplomka\Open Face\OpenFace_2.2.0_win_x64\FeatureExtraction.exe"
+
 lastPosition = 0
 
 # Output directory
@@ -106,8 +106,8 @@ outDir = r"C:\Users\hwojc\Desktop\Diplomka\Repo\OpenFace_DeepFace_merge\processe
 #Delete previous data
 deleteFolderContents(outDir)
 
-csvFilePath = outDir + r"\images.csv"
-checkCSV = False
+csvFilePath = outDir
+
 
 start = time.time()
 
@@ -118,28 +118,11 @@ dfPredEm = "None"
 ofDominantEm = "None"
 gSkipHeader = True
 
-args = ["-device", "2", "-cam_width", "640", "-cam_height", "480", "-vis-aus", "-aus", "-out_dir", outDir]
-
-# start the subprocess
-process = subprocess.Popen([exePath] + args)
-
-while True:
-    files = os.listdir(outDir)
-    csvFiles = False
-    for f in files:
-        if f.endswith(".csv"):
-            csvFiles = True
-            csvFilePath = os.path.join(outDir, f)
-            print(csvFilePath)
-    if csvFiles:
-        print("CSV file found! Emotion analysis starting...")
-        start = time.time()
-        break
-    else:
-        print("No CSV files found.")
-        time.sleep(1)
+process = openFace.featuresExtraxtionWebcam()
+csvFilePath = openFace.checkCSV()
 
 
+start = time.time()
 while True:
 
     frameRecieved, frame = cap.read()
@@ -151,56 +134,10 @@ while True:
                 dfPredEm = result['dominant_emotion']
             except:
                 dfPredEm = "Cannot detect face"
+            ofDominantEm, lastPosition = openFace.predict(csvFilePath, clf_entropy, lastPosition, gSkipHeader)
+            gSkipHeader = False
          
-            try:
-                # Get the current size of the file
-                currentSize = os.path.getsize(csvFilePath)
-                
-                # Check if the file has grown since we last read it
-                if currentSize > lastPosition:
-                    with open(csvFilePath, 'r') as csvFile:
-                        # Move the file pointer to the last position
-                        csvFile.seek(lastPosition)
-                        
-                        # Create a new CSV reader object
-                        reader = csv.reader(csvFile)
-                        
-                        ofDataArr = []
-                        # Process the new data in the file
-                        for row in reader:
-                            # Do something with the row data
-                            #print(row)
-                            ofDataArr.append(row)
-                        ofData = pd.DataFrame(ofDataArr)
-                        rows, cols = ofData.shape
-                        conf = []
-
-                        if gSkipHeader:
-                            aus = ofData.values[1:rows, 5:cols-1]
-                            conf = ofData.values[1:rows, 3]
-                            gSkipHeader = False
-                        else:
-                            aus = ofData.values[:, 5:cols-1]
-                            conf = ofData.values[:, 3]
-                        
-                        conf = np.array(conf, dtype=np.float)
-                        avgConf = np.mean(conf)
-                        
-                        if rows > 0:
-                            if avgConf < 0.5:
-                                ofDominantEm = "Low confidence"
-                            else:
-                                emPred = decTree.prediction(aus, clf_entropy)
-                                ofDominantEm, dominantEmPct = openFace.GetDominantEmotion(emPred)
-                                print(ofDominantEm, dominantEmPct)
-                       
-
-                        # Update the last position to the current size of the file
-                        lastPosition = currentSize
-            except FileNotFoundError:
-                print("CSV file doesnt exist!")
-
-
+            
         frameCopy = np.copy(frame)
         # input image dimensions for the network
         inWidth = 256
@@ -219,9 +156,6 @@ while True:
         
     else:
         print("Frame not recieved")
-    
-  
-    
 
     #Get key, if ESC, then end loop
     c = cv2.waitKey(1)
