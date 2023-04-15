@@ -26,6 +26,9 @@ import matplotlib.pyplot as plt
 from sklearn.inspection import DecisionBoundaryDisplay
 from collections import Counter
 
+import openPoseLib
+
+
 def deleteFolderContents(folder_path):
     """
     Deletes all files and subdirectories inside a folder, but not the folder itself.
@@ -191,6 +194,41 @@ def cal_accuracy(y_test, y_pred):
 	acc = accuracy_score(y_test,y_pred)*100
 	return acc
 
+
+def displayTableOnFrame(frame, deepfaceOutput, openfaceOutput, numFrames):
+    # Define the table contents
+    table = [
+        ["DeepFace output:", str(deepfaceOutput)],
+        ["OpenFace output:", str(openfaceOutput)],
+        ["Frames:", str(numFrames)]
+    ]
+
+    # Define the font and font scale
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    fontScale = 0.5
+
+    # Define the size of each cell in the table
+    cellSize = (150, 25)
+
+    # Loop over the rows and columns of the table
+    for i in range(3):
+        for j in range(2):
+            # Define the position of the cell
+            x = j * cellSize[0]
+            y = i * cellSize[1]
+
+            # Draw the black rectangle behind the text
+            cv2.rectangle(frame, (x, y), (x + cellSize[0], y + cellSize[1]), (0, 0, 0), -1)
+
+            # Draw the text in the cell
+            cv2.putText(frame, table[i][j], (x + 5, y + 20), font, fontScale, (255, 255, 255), 1)
+
+    return frame
+
+
+
+
+
 trainCSV = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\trainAUcAUr.csv'
 testCSV =  r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\testAUcAUr.csv'
 
@@ -233,8 +271,10 @@ imgPath = r'C:\Users\hwojc\Desktop\Diplomka\Repo\OpenPose\OpenPose\single.jpeg'
 parser = argparse.ArgumentParser(description='Run keypoint detection')
 parser.add_argument("--device", default="gpu", help="Device to inference on")
 parser.add_argument("--image_file", default=imgPath, help="Input image")
-
 args = parser.parse_args()
+
+net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
@@ -246,6 +286,7 @@ exePath  = r"C:\Users\hwojc\Desktop\Diplomka\Open Face\OpenFace_2.2.0_win_x64\Fe
 
 imageDirPathBase  = r"C:\Users\hwojc\Desktop\Diplomka\Repo\OpenFace_DeepFace_merge\images"
 imgID = 0
+lastPosition = 0
 
 # Output directory
 outDir = r"C:\Users\hwojc\Desktop\Diplomka\Repo\OpenFace_DeepFace_merge\processed"
@@ -254,32 +295,40 @@ outDir = r"C:\Users\hwojc\Desktop\Diplomka\Repo\OpenFace_DeepFace_merge\processe
 deleteFolderContents(imageDirPathBase)
 deleteFolderContents(outDir)
 
-outputFilePath = outDir + r"\images.csv"
+csvFilePath = outDir + r"\images.csv"
 checkCSV = False
-gCheckProc = False
 
 start = time.time()
-
-imgDirIndex = 1
-imgSavedCount = 0
-imageDirPath =  os.path.join(imageDirPathBase, str(imgDirIndex))
-if not os.path.exists(imageDirPath):
-    os.makedirs(imageDirPath)
 
 
 frameCount = 0
 skippedFrames = 10
 dfPredEm = "None"
+ofDominantEm = "None"
+gSkipHeader = True
 
-#start OpenFace
-#process = subprocess.Popen([exePath, "-device 2", "-cam_width 640", "-cam_height 480", "-vis-aus", "-aus", "-pose", "-out_dir", outDir])
-#process = subprocess.run([exePath, "-device 2", "-cam_width 640", "-cam_height 480", "-vis-aus", "-aus", "-pose"])
-
-
-args = ["-device", "2", "-cam_width", "640", "-cam_height", "480", "-vis-aus", "-aus", "-pose", "-out_dir", outDir]
+args = ["-device", "2", "-cam_width", "640", "-cam_height", "480", "-vis-aus", "-aus", "-out_dir", outDir]
 
 # start the subprocess
 process = subprocess.Popen([exePath] + args)
+
+while True:
+    files = os.listdir(outDir)
+    csvFiles = False
+    for f in files:
+        if f.endswith(".csv"):
+            csvFiles = True
+            csvFilePath = os.path.join(outDir, f)
+            print(csvFilePath)
+    if csvFiles:
+        print("CSV file found! Emotion analysis starting...")
+        start = time.time()
+        break
+    else:
+        print("No CSV files found.")
+        time.sleep(1)
+
+     
 
 # wait for the subprocess to finish
 
@@ -294,11 +343,6 @@ while True:
             try:
                 result = DeepFace.analyze(frame, actions = ['emotion'], enforce_detection= True)
                 dfPredEm = result['dominant_emotion']
-                imgName = str(imgID) + '.jpg'
-                imgPath = os.path.join(imageDirPath, imgName)
-                cv2.imwrite(imgPath, frame)
-                imgSavedCount = imgSavedCount + 1
-                imgID = imgID + 1
 
                 """
                 if(imgSavedCount % 30 == 0):
@@ -313,10 +357,10 @@ while True:
                     gCheckProc = True
                 """
             except:
-                frame = cv2.putText(frame,'Cannot detect face',(50,50), cv2.FONT_ITALIC, 1, (0,0,0), 2, cv2.LINE_4)
-
-            if gCheckProc:
+                dfPredEm = "Cannot detect face"
                 """
+            if gCheckProc:
+                
                 if process.poll() == None:
                     checkCSV = False
                 else:
@@ -341,9 +385,56 @@ while True:
                     #time.sleep(0.1)
                     print("CSV doesnt exist yet")
             """
+            try:
+                # Get the current size of the file
+                currentSize = os.path.getsize(csvFilePath)
+                
+                # Check if the file has grown since we last read it
+                if currentSize > lastPosition:
+                    with open(csvFilePath, 'r') as csvFile:
+                        # Move the file pointer to the last position
+                        csvFile.seek(lastPosition)
+                        
+                        # Create a new CSV reader object
+                        reader = csv.reader(csvFile)
+                        
+                        ofDataArr = []
+                        # Process the new data in the file
+                        for row in reader:
+                            # Do something with the row data
+                            #print(row)
+                            ofDataArr.append(row)
+                        ofData = pd.DataFrame(ofDataArr)
+                        rows, cols = ofData.shape
+                        conf = []
+
+                        if gSkipHeader:
+                            aus = ofData.values[1:rows, 5:cols-1]
+                            conf = ofData.values[1:rows, 3]
+                            gSkipHeader = False
+                        else:
+                            aus = ofData.values[:, 5:cols-1]
+                            conf = ofData.values[:, 3]
+                        
+                        conf = np.array(conf, dtype=np.float)
+                        avgConf = np.mean(conf)
+                        
+                        if rows > 0:
+                            if avgConf < 0.5:
+                                ofDominantEm = "Low confidence"
+                            else:
+                                emPred = prediction(aus, clf_entropy)
+                                ofDominantEm, dominantEmPct = ofGetDominantEmotion(emPred)
+                                print(ofDominantEm, dominantEmPct)
+                       
+
+                        # Update the last position to the current size of the file
+                        lastPosition = currentSize
+            except FileNotFoundError:
+                print("CSV file doesnt exist!")
+
+
         frameCopy = np.copy(frame)
-        net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
-        net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
         # input image dimensions for the network
         inWidth = 240
         inHeight = 160
@@ -351,13 +442,18 @@ while True:
                                 (0, 0, 0), swapRB=False, crop=False)
         net.setInput(inpBlob)
         output = net.forward()
-        points = opGetPoints(output, frame, frameCopy)
+        points = openPoseLib.GetPoints(output, frame, frameCopy)
 
         frame = opDrawSkeleton(frame, points, POSE_PAIRS)
+  
+        frame = displayTableOnFrame(frame, dfPredEm, ofDominantEm, frameCount)
+        """
         frame = cv2.putText(frame, dfPredEm,(50,50), cv2.FONT_ITALIC, 1, (0,0,0), 2, cv2.LINE_4)
+        frame = cv2.putText(frame, ofDominantEm, (300,50), cv2.FONT_ITALIC, 1, (0,0,255), 2, cv2.LINE_4)
         frame = cv2.putText(frame, str(frameCount), (50,100), cv2.FONT_ITALIC, 1, (0,0,0), 2)
-        
+        """
         cv2.imshow('Output-Skeleton', frame)
+        #print("Elapsed time: {:.2f} seconds".format(time.time() - start))
         
     else:
         print("Frame not recieved")
