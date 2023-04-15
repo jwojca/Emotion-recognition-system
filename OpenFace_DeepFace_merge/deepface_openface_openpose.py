@@ -47,12 +47,6 @@ def deleteFolderContents(folder_path):
         except Exception as e:
             print(f"Failed to delete {file_path}. Reason: {e}")
  
-
-
-
-
-
-
 def displayTableOnFrame(frame, deepfaceOutput, openfaceOutput, numFrames):
     # Define the table contents
     table = [
@@ -91,34 +85,10 @@ clf_entropy = decTree.train_using_entropy(X_train, X_test, y_train, 7, 37)
 y_pred_entropy = decTree.prediction(X_test, clf_entropy)
 acc = decTree.cal_accuracy(y_test, y_pred_entropy)
 
-
-
-
 #Open Pose
-MODE = "MPI"
+net = openPose.loadModel()
 
-if MODE == "COCO":
-    protoFile = "pose/coco/pose_deploy_linevec.prototxt"
-    weightsFile = "pose/coco/pose_iter_440000.caffemodel"
-    nPoints = 18
-    POSE_PAIRS = [ [1,0],[1,2],[1,5],[2,3],[3,4],[5,6],[6,7],[1,8],[8,9],[9,10],[1,11],[11,12],[12,13],[0,14],[0,15],[14,16],[15,17]]
-
-elif MODE == "MPI" :
-    protoFile = r'C:\Users\hwojc\Desktop\Diplomka\OpenPose\repo\openpose\models\pose\mpi\pose_deploy_linevec_faster_4_stages.prototxt'
-    weightsFile = r'C:\Users\hwojc\Desktop\Diplomka\OpenPose\repo\openpose\models\pose\mpi\pose_iter_160000.caffemodel'
-    nPoints = 15
-    POSE_PAIRS = [[0,1], [1,2], [2,3], [3,4], [1,5], [5,6], [6,7], [1,14], [14,8], [8,9], [9,10], [14,11], [11,12], [12,13] ]
-
-net = cv2.dnn.readNetFromCaffe(protoFile, weightsFile)
-imgPath = r'C:\Users\hwojc\Desktop\Diplomka\Repo\OpenPose\OpenPose\single.jpeg'
-parser = argparse.ArgumentParser(description='Run keypoint detection')
-parser.add_argument("--device", default="gpu", help="Device to inference on")
-parser.add_argument("--image_file", default=imgPath, help="Input image")
-args = parser.parse_args()
-
-net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
-net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
-
+#Init webcam
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
@@ -128,16 +98,12 @@ if not cap.isOpened():
 # Path to FaceLandmarkImg.exe and image file
 #exePath  = r"C:\Users\hwojc\Desktop\Diplomka\Open Face\OpenFace_2.2.0_win_x64\FeatureExtraction.exe"
 exePath  = r"C:\Users\hwojc\Desktop\Diplomka\Open Face\OpenFace_2.2.0_win_x64\FeatureExtraction.exe"
-
-imageDirPathBase  = r"C:\Users\hwojc\Desktop\Diplomka\Repo\OpenFace_DeepFace_merge\images"
-imgID = 0
 lastPosition = 0
 
 # Output directory
 outDir = r"C:\Users\hwojc\Desktop\Diplomka\Repo\OpenFace_DeepFace_merge\processed"
 
 #Delete previous data
-deleteFolderContents(imageDirPathBase)
 deleteFolderContents(outDir)
 
 csvFilePath = outDir + r"\images.csv"
@@ -244,15 +210,10 @@ while True:
         net.setInput(inpBlob)
         output = net.forward()
         points = openPose.GetPoints(output, frame, frameCopy)
-
-        frame = openPose.DrawSkeleton(frame, points, POSE_PAIRS)
+        frame = openPose.DrawSkeleton(frame, points)
   
         frame = displayTableOnFrame(frame, dfPredEm, ofDominantEm, frameCount)
-        """
-        frame = cv2.putText(frame, dfPredEm,(50,50), cv2.FONT_ITALIC, 1, (0,0,0), 2, cv2.LINE_4)
-        frame = cv2.putText(frame, ofDominantEm, (300,50), cv2.FONT_ITALIC, 1, (0,0,255), 2, cv2.LINE_4)
-        frame = cv2.putText(frame, str(frameCount), (50,100), cv2.FONT_ITALIC, 1, (0,0,0), 2)
-        """
+
         cv2.imshow('Output-Skeleton', frame)
         #print("Elapsed time: {:.2f} seconds".format(time.time() - start))
         

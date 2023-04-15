@@ -4,11 +4,12 @@ import numpy as np
 import math
 from matplotlib.patches import Ellipse
 import numpy as np
+import argparse
 
-protoFile = "pose/coco/pose_deploy_linevec.prototxt"
-weightsFile = "pose/coco/pose_iter_440000.caffemodel"
-nPoints = 18
-POSE_PAIRS = [ [1,0],[1,2],[1,5],[2,3],[3,4],[5,6],[6,7],[1,8],[8,9],[9,10],[1,11],[11,12],[12,13],[0,14],[0,15],[14,16],[15,17]]
+protoFile = r'C:\Users\hwojc\Desktop\Diplomka\OpenPose\repo\openpose\models\pose\mpi\pose_deploy_linevec_faster_4_stages.prototxt'
+weightsFile = r'C:\Users\hwojc\Desktop\Diplomka\OpenPose\repo\openpose\models\pose\mpi\pose_iter_160000.caffemodel'
+nPoints = 15
+POSE_PAIRS = [[0,1], [1,2], [2,3], [3,4], [1,5], [5,6], [6,7], [1,14], [14,8], [8,9], [9,10], [14,11], [11,12], [12,13] ]
 
 def angleFromVertical(p1, p2):
     """Calculate the angle in degrees between the line connecting points p1 and p2
@@ -18,7 +19,7 @@ def angleFromVertical(p1, p2):
     angle = math.atan2(deltaX, deltaY)
     return -math.degrees(angle)
 
-def DrawSkeleton(frame, points, POSE_PAIRS):
+def DrawSkeleton(frame, points):
     # Draw Skeleton
     for pair in POSE_PAIRS:
         partA = pair[0]
@@ -90,3 +91,16 @@ def GetPoints(output, frame, frameCopy):
         else :
             points.append(None)
     return points
+
+def loadModel():
+    net = cv2.dnn.readNetFromCaffe(protoFile, weightsFile)
+    #imgPath = r'C:\Users\hwojc\Desktop\Diplomka\Repo\OpenPose\OpenPose\single.jpeg'
+    """
+    parser = argparse.ArgumentParser(description='Run keypoint detection')
+    parser.add_argument("--device", default="gpu", help="Device to inference on")
+    parser.add_argument("--image_file", default=imgPath, help="Input image")
+    args = parser.parse_args()
+    """
+    net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+    net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+    return net
