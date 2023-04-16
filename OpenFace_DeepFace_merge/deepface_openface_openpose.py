@@ -148,7 +148,7 @@ if not cap.isOpened():
 
 gLastPosCsv = 0
 gSkipCsvHead = True
-gHandsPoints = (False, False, False)
+gHandsPoints = [False, False, False]
 
 start = time.time()
 
