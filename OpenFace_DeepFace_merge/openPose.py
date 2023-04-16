@@ -16,10 +16,10 @@ POSE_PAIRS = [[0,1], [1,2], [2,3], [3,4], [1,5], [5,6], [6,7], [1,14], [14,8], [
 import matplotlib.path as mpath
 import numpy as np
 
-def isInsideCustomEllipse(center, ellAngle, point, arcWidth, arcHeight, arcStart, arcEnd, frame):
+def customEllipse(center, ellAngle, diameter, arcStart, arcEnd):
     # Define the arc parameters
-    width = arcWidth * 2
-    height = arcHeight * 2
+    width = int(diameter/1.5) * 2
+    height = int(diameter/1.2) * 2
     if arcStart < arcEnd:
         theta1 = ellAngle + arcStart
         theta2 = ellAngle + arcEnd
@@ -44,11 +44,17 @@ def isInsideCustomEllipse(center, ellAngle, point, arcWidth, arcHeight, arcStart
     
     # Create the path
     e = mpath.Path(allCoords)
-    contours = e.to_polygons()
-    cv2.polylines(frame, np.int32([contours]), True, (120, 255, 0), 2)
-    # Check if the point is inside the path
-    return (e.contains_point(point), frame)
+    return e
 
+
+def isInsideCustomEllipse(e, point):
+    # Check if the point is inside the path
+    return e.contains_point(point)
+
+def drawCustomEllipse(e, frame, color):
+    contours = e.to_polygons()
+    cv2.polylines(frame, np.int32([contours]), True, color, 2)
+    return frame
 
 def angleFromVertical(p1, p2):
     """Calculate the angle in degrees between the line connecting points p1 and p2
@@ -74,6 +80,9 @@ def handsPos(frame, points):
     handsPos = [False, False, False, False]
     headDetected = points[0] and points[1]
     if headDetected:
+            
+            rightWrist = points[4]
+            leftWrist = points[7]
             diameter = math.dist(points[0], points[1])
             midPoint = [0, 0]
             # Define two points
@@ -82,21 +91,29 @@ def handsPos(frame, points):
 
             # Calculate the midpoint
             midpoint = (pointArr0 + pointArr1) / 2
-            weight = 0.25
-            adjMidpoint = ((1 - weight) * pointArr1[0] + weight * midpoint[0], (1 - weight) * pointArr1[1] + weight * midpoint[1])
-            adjCenter = tuple(np.round(adjMidpoint).astype(int))
-            cv2.circle(frame, adjCenter, 8, (0, 255, 0), thickness=-1, lineType=cv2.FILLED)
+            weight = 0.4
+            adjMidpointTop = ((1 - weight) * pointArr1[0] + weight * pointArr0[0], (1 - weight) * pointArr1[1] + weight * pointArr0[1])
+            topElCent = tuple(np.round(adjMidpointTop).astype(int))
+
+            weight = 0.15
+            adjMidpointBot = ((1 - weight) * pointArr1[0] + weight * pointArr0[0], (1 - weight) * pointArr1[1] + weight * pointArr0[1])
+            botElCent = tuple(np.round(adjMidpointBot).astype(int))
+
             
 
             center = tuple(np.round(midpoint).astype(int))
             ellAngle = angleFromVertical(points[0], points[1])
             #cv2.circle(frame, center, round((diameter/2) * 1.2), (255, 0, 0), thickness = 2)
+
+            bottEl = customEllipse(botElCent, ellAngle, diameter, 0, 180)
+            topEl = customEllipse(topElCent, ellAngle, diameter, 180, 360)
             
-            cv2.ellipse(frame, center, (int(diameter/1.5), int(diameter/1.2)), ellAngle, 180, 360, (255, 0, 0), thickness = 2)
-            cv2.ellipse(frame, adjCenter, (int(diameter/1.5), int(diameter/1.2)), ellAngle, 0, 180, (0, 255, 0), thickness = 2)
+            frame = drawCustomEllipse(bottEl, frame, (255, 0, 0))
+            frame = drawCustomEllipse(topEl, frame, (0, 0, 255))
+            
+            
             e = Ellipse((int(center[0]), int(center[1])), 2*int(diameter/1.5), 2*int(diameter/1.2), ellAngle)
-            rightWrist = points[4]
-            leftWrist = points[7]
+           
 
             if(rightWrist and not leftWrist):
                 #Check if is in face area
@@ -106,6 +123,8 @@ def handsPos(frame, points):
 
                 if rHandRaised(points, handsPos[0]):
                     handsPos[2] = True
+                if isInsideCustomEllipse(bottEl, rightWrist):
+                    print("right wrist in bottom ellipse")
                 
             elif(leftWrist and not rightWrist):
                 if e.contains_point(leftWrist):
@@ -124,11 +143,11 @@ def handsPos(frame, points):
                 if lHandRaised(points, handsPos[1]):
                     handsPos[3] = True
 
-                inBe, frame = isInsideCustomEllipse(adjCenter, ellAngle, rightWrist, int(diameter/1.5), int(diameter/1.2), 0, 180, frame)
-                if inBe:
+                if isInsideCustomEllipse(bottEl, rightWrist):
                     print("right wrist in bottom ellipse")
             else:
                 print("No hand in face area")
+        
     return (frame, handsPos)
 
 def rHandRaised(points, inFace):
