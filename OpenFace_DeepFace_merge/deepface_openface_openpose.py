@@ -70,10 +70,12 @@ def displayTableInWindow(deepfaceOutput, openfaceOutput, numFrames, handsPoints)
         ["DeepFace output:", str(deepfaceOutput)],
         ["OpenFace output:", str(openfaceOutput)],
         ["Frames:", str(numFrames)],
-        ["RH in Face:", handsPoints[0]],
-        ["LH in Face:", handsPoints[1]],
-        ["RH raised:", handsPoints[2]],
-        ["LH raised:", handsPoints[3]]
+        ["RH in Bot Face:", handsPoints[0]],
+        ["LH in Bot Face:", handsPoints[1]],
+        ["RH in Top Face:", handsPoints[2]],
+        ["LH in Top Face:", handsPoints[3]],
+        ["RH raised:", handsPoints[4]],
+        ["LH raised:", handsPoints[5]]
     ]
 
     # Define the font and font scale

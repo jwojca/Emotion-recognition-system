@@ -47,7 +47,7 @@ def customEllipse(center, ellAngle, diameter, arcStart, arcEnd):
     return e
 
 
-def isInsideCustomEllipse(e, point):
+def isInside(e, point):
     # Check if the point is inside the path
     return e.contains_point(point)
 
@@ -76,8 +76,8 @@ def DrawSkeleton(frame, points):
     return frame
 
 def handsPos(frame, points):
-    #handPos is array containing vals of (rhInFace, lhInFace, rhRaised, lhRaised)
-    handsPos = [False, False, False, False]
+    #handPos is array containing vals of (RHInBottFace, LHInBottFace, RHInTopFace, LHInTopFace, rhRaised, lhRaised)
+    handsPos = [False, False, False, False, False, False]
     headDetected = points[0] and points[1]
     if headDetected:
             
@@ -117,34 +117,43 @@ def handsPos(frame, points):
 
             if(rightWrist and not leftWrist):
                 #Check if is in face area
-                if e.contains_point(rightWrist):
+                if isInside(bottEl, rightWrist):
                     #print("Right hand in face area")
                     handsPos[0] = True
-
-                if rHandRaised(points, handsPos[0]):
+                elif isInside(topEl, rightWrist):
                     handsPos[2] = True
-                if isInsideCustomEllipse(bottEl, rightWrist):
-                    print("right wrist in bottom ellipse")
+
+                if rHandRaised(points, handsPos[0] or handsPos[2]):
+                    handsPos[4] = True
+
                 
             elif(leftWrist and not rightWrist):
-                if e.contains_point(leftWrist):
+                if isInside(bottEl, leftWrist):
                     #print("Left hand in face area")
                     handsPos[1] = True
-                if lHandRaised(points, handsPos[1]):
+                elif isInside(topEl, leftWrist):
                     handsPos[3] = True
+
+                if lHandRaised(points, handsPos[1] or handsPos[3]):
+                    handsPos[5] = True
 
             elif(rightWrist and leftWrist):
-                if e.contains_point(rightWrist):
+                #In Face
+                if isInside(bottEl, rightWrist):
                     handsPos[0] = True
-                if e.contains_point(leftWrist):
-                    handsPos[1] = True
-                if rHandRaised(points, handsPos[0]):
+                elif isInside(topEl, rightWrist):
                     handsPos[2] = True
-                if lHandRaised(points, handsPos[1]):
+
+                if isInside(bottEl, leftWrist):
+                    handsPos[1] = True
+                elif isInside(topEl, leftWrist):
                     handsPos[3] = True
 
-                if isInsideCustomEllipse(bottEl, rightWrist):
-                    print("right wrist in bottom ellipse")
+                #Raised
+                if rHandRaised(points, handsPos[0] or handsPos[2]):
+                    handsPos[4] = True
+                if lHandRaised(points, handsPos[1] or handsPos[3]):
+                    handsPos[5] = True
             else:
                 print("No hand in face area")
         
