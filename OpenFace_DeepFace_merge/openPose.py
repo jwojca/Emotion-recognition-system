@@ -5,11 +5,50 @@ import math
 from matplotlib.patches import Ellipse
 import numpy as np
 import argparse
+import matplotlib.path as mpath
 
 protoFile = r'C:\Users\hwojc\Desktop\Diplomka\OpenPose\repo\openpose\models\pose\mpi\pose_deploy_linevec_faster_4_stages.prototxt'
 weightsFile = r'C:\Users\hwojc\Desktop\Diplomka\OpenPose\repo\openpose\models\pose\mpi\pose_iter_160000.caffemodel'
 nPoints = 15
 POSE_PAIRS = [[0,1], [1,2], [2,3], [3,4], [1,5], [5,6], [6,7], [1,14], [14,8], [8,9], [9,10], [14,11], [11,12], [12,13] ]
+
+
+import matplotlib.path as mpath
+import numpy as np
+
+def isInsideCustomEllipse(center, ellAngle, point, arcWidth, arcHeight, arcStart, arcEnd, frame):
+    # Define the arc parameters
+    width = arcWidth * 2
+    height = arcHeight * 2
+    if arcStart < arcEnd:
+        theta1 = ellAngle + arcStart
+        theta2 = ellAngle + arcEnd
+    else:
+        theta1 = ellAngle + arcEnd
+        theta2 = ellAngle + arcStart
+    
+    # Compute the arc coordinates
+    cx, cy = center
+    rx = width / 2
+    ry = height / 2
+    t = np.linspace(np.deg2rad(theta1), np.deg2rad(theta2), 50)
+    arcCoords = np.column_stack((cx + rx * np.cos(t), cy + ry * np.sin(t)))
+    
+    # Add the connecting line
+    x1 = cx + rx * np.cos(np.deg2rad(theta1))
+    y1 = cy + ry * np.sin(np.deg2rad(theta1))
+    x2 = cx + rx * np.cos(np.deg2rad(theta2))
+    y2 = cy + ry * np.sin(np.deg2rad(theta2))
+    lineCoords = [[x1, y1], [x2, y2]]
+    allCoords = np.vstack((arcCoords, lineCoords))
+    
+    # Create the path
+    e = mpath.Path(allCoords)
+    contours = e.to_polygons()
+    cv2.polylines(frame, np.int32([contours]), True, (120, 255, 0), 2)
+    # Check if the point is inside the path
+    return (e.contains_point(point), frame)
+
 
 def angleFromVertical(p1, p2):
     """Calculate the angle in degrees between the line connecting points p1 and p2
@@ -43,12 +82,18 @@ def handsPos(frame, points):
 
             # Calculate the midpoint
             midpoint = (pointArr0 + pointArr1) / 2
+            weight = 0.25
+            adjMidpoint = ((1 - weight) * pointArr1[0] + weight * midpoint[0], (1 - weight) * pointArr1[1] + weight * midpoint[1])
+            adjCenter = tuple(np.round(adjMidpoint).astype(int))
+            cv2.circle(frame, adjCenter, 8, (0, 255, 0), thickness=-1, lineType=cv2.FILLED)
+            
+
             center = tuple(np.round(midpoint).astype(int))
             ellAngle = angleFromVertical(points[0], points[1])
             #cv2.circle(frame, center, round((diameter/2) * 1.2), (255, 0, 0), thickness = 2)
-            center2 = tuple(np.round(points[1]).astype(int))
-            cv2.ellipse(frame, center, (int(diameter/1.5), int(diameter/1.2)), ellAngle, 0, 360, (255, 0, 0), thickness = 2)
-
+            
+            cv2.ellipse(frame, center, (int(diameter/1.5), int(diameter/1.2)), ellAngle, 180, 360, (255, 0, 0), thickness = 2)
+            cv2.ellipse(frame, adjCenter, (int(diameter/1.5), int(diameter/1.2)), ellAngle, 0, 180, (0, 255, 0), thickness = 2)
             e = Ellipse((int(center[0]), int(center[1])), 2*int(diameter/1.5), 2*int(diameter/1.2), ellAngle)
             rightWrist = points[4]
             leftWrist = points[7]
@@ -78,7 +123,10 @@ def handsPos(frame, points):
                     handsPos[2] = True
                 if lHandRaised(points, handsPos[1]):
                     handsPos[3] = True
-                
+
+                inBe, frame = isInsideCustomEllipse(adjCenter, ellAngle, rightWrist, int(diameter/1.5), int(diameter/1.2), 0, 180, frame)
+                if inBe:
+                    print("right wrist in bottom ellipse")
             else:
                 print("No hand in face area")
     return (frame, handsPos)
