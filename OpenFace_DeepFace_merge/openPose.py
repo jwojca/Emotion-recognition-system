@@ -79,6 +79,7 @@ def handsPos(frame, points):
     #handPos is array containing vals of (RHInBottFace, LHInBottFace, RHInTopFace, LHInTopFace, rhRaised, lhRaised)
     handsPos = [False, False, False, False, False, False]
     headDetected = points[0] and points[1]
+    chestDetected = points[14] and points[1]
     if headDetected:
             
             rightWrist = points[4]
@@ -156,8 +157,16 @@ def handsPos(frame, points):
                     handsPos[5] = True
             else:
                 print("No hand in face area")
-        
+
+    if chestDetected:
+        chest = points[14]
+        neck = points[1]
+        diameter = math.dist(chest, neck)/2
+        cv2.circle(frame, chest, int(diameter), (255, 0, 0), thickness = 2)
+
+
     return (frame, handsPos)
+        
 
 def rHandRaised(points, inFace):
     rightWrist = points[4]
