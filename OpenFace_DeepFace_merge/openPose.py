@@ -20,6 +20,8 @@ def angleFromVertical(p1, p2):
     return -math.degrees(angle)
 
 def DrawSkeleton(frame, points):
+    #handPos is tuple containing vals of (rightHandInFaceArea, leftHandInFaceArea, bothHandsInFaceArea)
+    handsPos = (False, False, False)
     # Draw Skeleton
     for pair in POSE_PAIRS:
         partA = pair[0]
@@ -50,15 +52,18 @@ def DrawSkeleton(frame, points):
             if(rightWrist and not leftWrist):
                 if e.contains_point(rightWrist):
                     print("Right hand in face area")
+                    handsPos = True, False, False
             elif(leftWrist and not rightWrist):
                 if e.contains_point(leftWrist):
                     print("Left hand in face area")
+                    handsPos = False, True, False
             elif(rightWrist and leftWrist):
                 if e.contains_point(leftWrist) and e.contains_point(rightWrist):
                     print("Both hands in face area")
+                    handsPos = False, False, True
             else:
                 print("No hand in face area")
-    return frame
+    return (frame, handsPos)
 
 def GetPoints(output, frame, frameCopy):
     frameWidth = frame.shape[1]

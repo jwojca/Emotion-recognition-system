@@ -32,20 +32,7 @@ import decTree
 
 
 
-def deleteFolderContents(folder_path):
-    """
-    Deletes all files and subdirectories inside a folder, but not the folder itself.
-    """
-    for filename in os.listdir(folder_path):
-        file_path = os.path.join(folder_path, filename)
-        try:
-            if os.path.isfile(file_path):
-                os.unlink(file_path)  # remove file
-            elif os.path.isdir(file_path):
-                deleteFolderContents(file_path)  # recurse and remove subdirectories
-                os.rmdir(file_path)  # remove directory
-        except Exception as e:
-            print(f"Failed to delete {file_path}. Reason: {e}")
+
  
 def displayTableOnFrame(frame, deepfaceOutput, openfaceOutput, numFrames):
     # Define the table contents
@@ -77,6 +64,67 @@ def displayTableOnFrame(frame, deepfaceOutput, openfaceOutput, numFrames):
 
     return frame
 
+def displayTableInWindow(deepfaceOutput, openfaceOutput, numFrames, handsPoints):
+    # Define the table contents
+    table = [
+        ["DeepFace output:", str(deepfaceOutput)],
+        ["OpenFace output:", str(openfaceOutput)],
+        ["Frames:", str(numFrames)],
+        ["RH in Face:", handsPoints[0]],
+        ["LH in Face:", handsPoints[1]],
+        ["BH in Face:", handsPoints[2]]
+    ]
+
+    # Define the font and font scale
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    fontScale = 0.5
+
+    # Define the size of each cell in the table
+    cellSize = (180, 25)
+
+    # Define the circle radius
+    circleRadius = 5
+
+    # Calculate the size of the window based on the number of rows in the table
+    windowWidth = cellSize[0] * 2
+    windowHeight = cellSize[1] * len(table)
+
+    # Create a new window using OpenCV
+    cv2.namedWindow("Table", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("Table", windowWidth, windowHeight)
+
+    # Create an empty image for the table
+    tableImage = np.zeros((windowHeight, windowWidth, 3), dtype=np.uint8)
+
+    # Loop over the rows and columns of the table
+    for i in range(len(table)):
+        for j in range(2):
+            # Define the position of the cell
+            x = j * cellSize[0]
+            y = i * cellSize[1]
+
+            # Draw the black rectangle behind the text
+            cv2.rectangle(tableImage, (x, y), (x + cellSize[0], y + cellSize[1]), (0, 0, 0), -1)
+
+            
+
+            # Draw the circle for boolean values
+            if j == 1 and isinstance(table[i][j], bool):
+                circleCenter = (x + circleRadius, y + 15)
+                if table[i][j]:
+                    cv2.circle(tableImage, circleCenter, circleRadius, (0, 255, 0), -1)
+                else:
+                    cv2.circle(tableImage, circleCenter, circleRadius, (0, 0, 255), 1)
+            else:
+                # Draw the text in the cell
+                 cv2.putText(tableImage, table[i][j], (x + 5, y + 20), font, fontScale, (255, 255, 255), 1)
+
+    # Display the table in the window
+    cv2.imshow("Table", tableImage)
+
+
+
+
 
 #train decision tree
 trainData, testData = decTree.importdata()
@@ -98,16 +146,9 @@ if not cap.isOpened():
 # Path to FaceLandmarkImg.exe and image file
 #exePath  = r"C:\Users\hwojc\Desktop\Diplomka\Open Face\OpenFace_2.2.0_win_x64\FeatureExtraction.exe"
 
-lastPosition = 0
-
-# Output directory
-outDir = r"C:\Users\hwojc\Desktop\Diplomka\Repo\OpenFace_DeepFace_merge\processed"
-
-#Delete previous data
-deleteFolderContents(outDir)
-
-csvFilePath = outDir
-
+gLastPosCsv = 0
+gSkipCsvHead = True
+gHandsPoints = (False, False, False)
 
 start = time.time()
 
@@ -116,9 +157,9 @@ frameCount = 0
 skippedFrames = 10
 dfPredEm = "None"
 ofDominantEm = "None"
-gSkipHeader = True
 
-process = openFace.featuresExtraxtionWebcam()
+
+process = openFace.featuresExtractionWebcam()
 csvFilePath = openFace.checkCSV()
 
 
@@ -130,12 +171,12 @@ while True:
         frameCount = frameCount + 1
         if frameCount % skippedFrames == 0:
             try:
-                result = DeepFace.analyze(frame, actions = ['emotion'], enforce_detection= True)
+                result = DeepFace.analyze(frame, actions = ['emotion'], enforce_detection= True, verbose = 0)
                 dfPredEm = result['dominant_emotion']
             except:
                 dfPredEm = "Cannot detect face"
-            ofDominantEm, lastPosition = openFace.predict(csvFilePath, clf_entropy, lastPosition, gSkipHeader)
-            gSkipHeader = False
+            ofDominantEm, gLastPosCsv = openFace.predict(csvFilePath, clf_entropy, gLastPosCsv, gSkipCsvHead)
+            gSkipCsvHead = False
          
             
         frameCopy = np.copy(frame)
@@ -147,9 +188,10 @@ while True:
         net.setInput(inpBlob)
         output = net.forward()
         points = openPose.GetPoints(output, frame, frameCopy)
-        frame = openPose.DrawSkeleton(frame, points)
+        frame, gHandsPoints = openPose.DrawSkeleton(frame, points)
   
         frame = displayTableOnFrame(frame, dfPredEm, ofDominantEm, frameCount)
+        displayTableInWindow(dfPredEm, ofDominantEm, frameCount, gHandsPoints)
 
         cv2.imshow('Output-Skeleton', frame)
         #print("Elapsed time: {:.2f} seconds".format(time.time() - start))

@@ -11,7 +11,20 @@ outDir = r"C:\Users\hwojc\Desktop\Diplomka\Repo\OpenFace_DeepFace_merge\processe
 exePath  = r"C:\Users\hwojc\Desktop\Diplomka\Open Face\OpenFace_2.2.0_win_x64\FeatureExtraction.exe"
 args = ["-device", "2", "-cam_width", "640", "-cam_height", "480", "-vis-aus", "-aus", "-out_dir", outDir]
 
-
+def deleteFolderContents(folder_path):
+    """
+    Deletes all files and subdirectories inside a folder, but not the folder itself.
+    """
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+        try:
+            if os.path.isfile(file_path):
+                os.unlink(file_path)  # remove file
+            elif os.path.isdir(file_path):
+                deleteFolderContents(file_path)  # recurse and remove subdirectories
+                os.rmdir(file_path)  # remove directory
+        except Exception as e:
+            print(f"Failed to delete {file_path}. Reason: {e}")
 
 
 def GetDominantEmotion(data):
@@ -29,7 +42,9 @@ def GetDominantEmotion(data):
     dominantPercentage = counts[dominantEmotion] / len(data) * 100
     return (dominantEmotion, dominantPercentage)
 
-def featuresExtraxtionWebcam():
+def featuresExtractionWebcam():
+    #Delete previous data
+    deleteFolderContents(outDir)
     # start the subprocess
     process = subprocess.Popen([exePath] + args)
     return process
@@ -71,7 +86,6 @@ def predict(csvFilePath, clf_entropy, lastPosition, gSkipHeader):
                 # Process the new data in the file
                 for row in reader:
                     # Do something with the row data
-                    #print(row)
                     ofDataArr.append(row)
                 ofData = pd.DataFrame(ofDataArr)
                 rows, cols = ofData.shape
@@ -93,7 +107,7 @@ def predict(csvFilePath, clf_entropy, lastPosition, gSkipHeader):
                     else:
                         emPred = decTree.prediction(aus, clf_entropy)
                         ofDominantEm, dominantEmPct = GetDominantEmotion(emPred)
-                        print(ofDominantEm, dominantEmPct)
+                        #print(ofDominantEm, dominantEmPct)
                 
 
                 # Update the last position to the current size of the file
