@@ -1,1 +1,6 @@
 OpenPose/pose_iter_160000.caffemodel
+OpenFace_DeepFace_merge/__pycache__/decTree.cpython-310.pyc
+OpenFace_DeepFace_merge/__pycache__/openFace.cpython-310.pyc
+OpenFace_DeepFace_merge/__pycache__/openPose.cpython-310.pyc
+OpenFace_DeepFace_merge/processed/webcam_2023-04-16-10-12.csv
+OpenFace_DeepFace_merge/processed/
