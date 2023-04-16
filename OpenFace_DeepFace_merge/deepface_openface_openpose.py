@@ -72,7 +72,8 @@ def displayTableInWindow(deepfaceOutput, openfaceOutput, numFrames, handsPoints)
         ["Frames:", str(numFrames)],
         ["RH in Face:", handsPoints[0]],
         ["LH in Face:", handsPoints[1]],
-        ["BH in Face:", handsPoints[2]]
+        ["RH raised:", handsPoints[2]],
+        ["LH raised:", handsPoints[3]]
     ]
 
     # Define the font and font scale
@@ -171,7 +172,7 @@ while True:
         frameCount = frameCount + 1
         if frameCount % skippedFrames == 0:
             try:
-                result = DeepFace.analyze(frame, actions = ['emotion'], enforce_detection= True, verbose = 0)
+                result = DeepFace.analyze(frame, actions = ['emotion'], enforce_detection= True)
                 dfPredEm = result['dominant_emotion']
             except:
                 dfPredEm = "Cannot detect face"
@@ -188,7 +189,8 @@ while True:
         net.setInput(inpBlob)
         output = net.forward()
         points = openPose.GetPoints(output, frame, frameCopy)
-        frame, gHandsPoints = openPose.DrawSkeleton(frame, points)
+        frame = openPose.DrawSkeleton(frame, points)
+        frame, gHandsPoints = openPose.handsPos(frame, points)
   
         frame = displayTableOnFrame(frame, dfPredEm, ofDominantEm, frameCount)
         displayTableInWindow(dfPredEm, ofDominantEm, frameCount, gHandsPoints)

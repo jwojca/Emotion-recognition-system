@@ -20,8 +20,6 @@ def angleFromVertical(p1, p2):
     return -math.degrees(angle)
 
 def DrawSkeleton(frame, points):
-    #handPos is tuple containing vals of (rightHandInFaceArea, leftHandInFaceArea, bothHandsInFaceArea)
-    handsPos = [False, False, False]
     # Draw Skeleton
     for pair in POSE_PAIRS:
         partA = pair[0]
@@ -30,8 +28,13 @@ def DrawSkeleton(frame, points):
         if points[partA] and points[partB]:
             cv2.line(frame, points[partA], points[partB], (0, 255, 255), 2)
             cv2.circle(frame, points[partA], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
-            
-        if points[0] and points[1]:
+    return frame
+
+def handsPos(frame, points):
+    #handPos is array containing vals of (rhInFace, lhInFace, rhRaised, lhRaised)
+    handsPos = [False, False, False, False]
+    headDetected = points[0] and points[1]
+    if headDetected:
             diameter = math.dist(points[0], points[1])
             midPoint = [0, 0]
             # Define two points
@@ -49,30 +52,64 @@ def DrawSkeleton(frame, points):
             e = Ellipse((int(center[0]), int(center[1])), 2*int(diameter/1.5), 2*int(diameter/1.2), ellAngle)
             rightWrist = points[4]
             leftWrist = points[7]
+
             if(rightWrist and not leftWrist):
+                #Check if is in face area
                 if e.contains_point(rightWrist):
-                    print("Right hand in face area")
+                    #print("Right hand in face area")
                     handsPos[0] = True
-                else:
-                    handsPos[0] = False
+
+                if rHandRaised(points, handsPos[0]):
+                    handsPos[2] = True
+                
             elif(leftWrist and not rightWrist):
                 if e.contains_point(leftWrist):
-                    print("Left hand in face area")
+                    #print("Left hand in face area")
                     handsPos[1] = True
-                else:
-                    handsPos[1] = False
+                if lHandRaised(points, handsPos[1]):
+                    handsPos[3] = True
+
             elif(rightWrist and leftWrist):
                 if e.contains_point(rightWrist):
                     handsPos[0] = True
                 if e.contains_point(leftWrist):
                     handsPos[1] = True
-                if e.contains_point(leftWrist) and e.contains_point(rightWrist):
-                    print("Both hands in face area")
-                    handsPos[0] = True
-                    handsPos[1] = True
+                if rHandRaised(points, handsPos[0]):
+                    handsPos[2] = True
+                if lHandRaised(points, handsPos[1]):
+                    handsPos[3] = True
+                
             else:
                 print("No hand in face area")
     return (frame, handsPos)
+
+def rHandRaised(points, inFace):
+    rightWrist = points[4]
+    rightEl = points[3]
+    neck = points[1]
+    angle = 40.0
+     #if not in face -> check if raised
+    if not inFace:
+        if rightEl and rightEl[1] <= neck[1]:
+            return True
+        elif rightEl and rightWrist[1] <= rightEl[1] and abs(angleFromVertical(rightWrist, rightEl)) < angle:
+            return True
+    else:
+        return False
+
+def lHandRaised(points, inFace):
+    leftwrist = points[7]
+    leftEl = points[6]
+    neck = points[1]
+    angle = 40.0
+     #if not in face -> check if raised
+    if not inFace:
+        if leftEl and leftEl[1] <= neck[1]:
+            return True
+        elif leftEl and leftwrist[1] <= leftEl[1] and abs(angleFromVertical(leftwrist, leftEl)) < angle:
+            return True
+    else:
+        return False
 
 def GetPoints(output, frame, frameCopy):
     frameWidth = frame.shape[1]
