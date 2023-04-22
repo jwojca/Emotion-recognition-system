@@ -30,6 +30,8 @@ import openPose
 import openFace
 import decTree
 
+import tkinter
+
 
 def drawFrameOnWindow(windowImage, frame, topLeft):
 
@@ -40,12 +42,13 @@ def drawFrameOnWindow(windowImage, frame, topLeft):
     return windowImage
 
 
-def displayTableInWindow(deepfaceOutput, openfaceOutput, numFrames, handsPoints):
+def displayTableInWindow(deepfaceOutput, openfaceOutput, finalEmotion, numFrames, handsPoints):
     # Define the table contents
     numOfDec = 2
     table = [
         ["DeepFace output:", str(deepfaceOutput[0]) + ": " + str(round(deepfaceOutput[1], numOfDec)) + "%"],
         ["OpenFace output:", str(openfaceOutput[0]) + ": " + str(round(openfaceOutput[1], numOfDec)) + "%"],
+        ["Final emotion:", str(finalEmotion)],
         ["Frames:", str(numFrames)],
         ["RH in Bot Face:", handsPoints[0]],
         ["LH in Bot Face:", handsPoints[1]],
@@ -140,19 +143,14 @@ gOfOutput = ('None', 0.0)
 
 frameCount = 0
 skippedFrames = 10
-dfPredEm = "None"
+gDfPredEm = "None"
 gOfDomEm = "None"
 gOfDomEmPct = 0.0
 gFPS = 0
-gEmotionDict = {
-    "Angry" : 0.0,
-    "Disgust" : 0.0,
-    "Fear" : 0.0,
-    "Happy" : 0.0,
-    "Sad" : 0.0,
-    "Surprise" : 0.0,
-    "Neutral" : 0.0
-}
+
+gFearOrSur = False
+
+gFinalEmotion = "None"
 
 
 process = openFace.featuresExtractionWebcam()
@@ -166,23 +164,74 @@ mainWindow.fill(240)
 
 start = time.time()
 while True:
+    emotionDict = {
+    "Angry" : 0.0,
+    "Disgust" : 0.0,
+    "Fear" : 0.0,
+    "Happy" : 0.0,
+    "Sad" : 0.0,
+    "Surprise" : 0.0,
+    "Neutral" : 0.0
+    }   
+
+    gFearOrSur = False
+
     frameRecieved, frame = cap.read()
     if frameRecieved:
         frameCount = frameCount + 1
         if frameCount % skippedFrames == 0:
             try:
                 result = DeepFace.analyze(frame, actions = ['emotion'], enforce_detection= True)
-                dfPredEm = result['dominant_emotion']
+                gDfPredEm = result['dominant_emotion']
                 domEmStr = str(result['dominant_emotion'])
-                dfPredEmPct = result['emotion'][domEmStr]
-                gDfOutput = (dfPredEm, dfPredEmPct)
+                gDfPredEmPct = result['emotion'][domEmStr]
+                gDfOutput = (gDfPredEm, gDfPredEmPct)
+                emotionDict[domEmStr] = gDfPredEmPct
+                if gDfPredEm == "Fear" or "Surprise":
+                    gFearOrSur = True
             except:
-                dfPredEm = "Cannot detect face"
-                dfPredEmPct = 0.0
-                gDfOutput = (dfPredEm, dfPredEmPct)
-            gOfDomEm, gOfDomEmPct, gLastPosCsv = openFace.predict(csvFilePath, clf_entropy, gLastPosCsv, gSkipCsvHead)
-            gOfOutput = (gOfDomEm, gOfDomEmPct)
-            gSkipCsvHead = False
+                gDfPredEm = "Cannot detect face"
+                gDfPredEmPct = 0.0
+                gDfOutput = (gDfPredEm, gDfPredEmPct)
+            
+            try:
+                gOfDomEm, gOfDomEmPct, gLastPosCsv = openFace.predict(csvFilePath, clf_entropy, gLastPosCsv, gSkipCsvHead)
+                gOfOutput = (gOfDomEm, gOfDomEmPct)
+                gSkipCsvHead = False
+
+                handInChest = gHandsPoints[6] or gHandsPoints[7]
+                handInBotFace = gHandsPoints[0] or gHandsPoints[1]
+                handsInTopFace = gHandsPoints[2] and gHandsPoints[3]
+
+                if gOfDomEm == "Fear" or "Surprise":
+                    gFearOrSur = True
+
+                if gOfDomEm != "Low confidence":
+                    if handsInTopFace:
+                        emotionDict["Surprise"] += 100.0
+                    if handInBotFace:
+                        if gFearOrSur:
+                            emotionDict["Surprise"] += 100.0
+                            emotionDict["Fear"] += 100.0
+                        else:
+                            emotionDict["Surprise"] += 20.0
+                            emotionDict["Fear"] += 20.0
+
+
+                emotionDict[str(gOfDomEm)] += gOfDomEmPct
+                gFinalEmotion = max(emotionDict, key = emotionDict.get)
+                
+               
+                if handInChest and gFearOrSur:
+                    emotionDict["Fear"] += 200.0
+                
+                gFinalEmotion = max(emotionDict, key = emotionDict.get)
+            except:
+                print("Low confidence")
+                handInBotFace = gHandsPoints[0] or gHandsPoints[1]
+                if handInBotFace:
+                    emotionDict["Fear"] += 100.0
+                gFinalEmotion = max(emotionDict, key = emotionDict.get)
          
             
         frameCopy = np.copy(frame)
@@ -197,7 +246,7 @@ while True:
         frame = openPose.DrawSkeleton(frame, points)
         frame, gHandsPoints = openPose.handsPos(frame, points)
   
-        #frame = displayTableOnFrame(frame, dfPredEm, gOfDomEm, frameCount)
+        #frame = displayTableOnFrame(frame, gDfPredEm, gOfDomEm, frameCount)
         if frameCount % skippedFrames == 0:
             end = time.time()
             procTime = end - start
@@ -205,9 +254,10 @@ while True:
             print(gFPS)
             start = end
 
-        guiTable = displayTableInWindow(gDfOutput, gOfOutput, frameCount, gHandsPoints)
-        frame = cv2.rectangle(frame, (0, 0), (100, 30), (0, 0, 0), -1)
-        frame = cv2.putText(frame, "FPS: " + str(gFPS), (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1.3)
+        guiTable = displayTableInWindow(gDfOutput, gOfOutput, gFinalEmotion, frameCount, gHandsPoints)
+        frame = cv2.rectangle(frame, (0, 0), (100, 60), (0, 0, 0), -1)
+        frame = cv2.putText(frame, "FPS: " + str(gFPS), (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        frame = cv2.putText(frame, str(gFinalEmotion), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
         mainWindow = drawFrameOnWindow(mainWindow,frame, (0, 0))
         mainWindow = drawFrameOnWindow(mainWindow, guiTable, (1000, 0))
         #cv2.putText(tableImage, table[i][j], (x + 5, y + 20), font, fontScale, (255, 255, 255), 1)
