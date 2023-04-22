@@ -78,7 +78,7 @@ def DrawSkeleton(frame, points):
             cv2.circle(frame, points[partA], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
     return frame
 
-def handsPos(frame, points):
+def handsPos(frame, points, skelVisBUt):
     #handPos is array containing vals of (RHInBottFace, LHInBottFace, RHInTopFace, LHInTopFace, rhRaised, lhRaised, RHInChes, LHInChest)
     handsPos = [False, False, False, False, False, False, False, False]
     headDetected = points[0] and points[1]
@@ -112,8 +112,9 @@ def handsPos(frame, points):
         bottEl = customEllipse(botElCent, ellAngle, diameter, 0, 180)
         topEl = customEllipse(topElCent, ellAngle, diameter, 180, 360)
         
-        frame = drawCustomEllipse(bottEl, frame, (255, 0, 0))
-        frame = drawCustomEllipse(topEl, frame, (0, 0, 255))
+        if skelVisBUt:
+            frame = drawCustomEllipse(bottEl, frame, (255, 0, 0))
+            frame = drawCustomEllipse(topEl, frame, (0, 0, 255))
         
         
         e = Ellipse((int(center[0]), int(center[1])), 2*int(diameter/1.5), 2*int(diameter/1.2), ellAngle)
@@ -164,7 +165,8 @@ def handsPos(frame, points):
         chest = points[14]
         neck = points[1]
         diameter = int(1.1 * math.dist(chest, neck)/2)
-        cv2.circle(frame, chest, diameter, (255, 0, 0), thickness = 2)
+        if skelVisBUt:
+         cv2.circle(frame, chest, diameter, (255, 0, 0), thickness = 2)
         chestArea = Circle(chest, diameter)
 
 

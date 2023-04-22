@@ -34,8 +34,8 @@ import tkinter as tk
 from PIL import Image, ImageTk
 
 # Define global variables
-button1_state = False
-button2_state = False
+startButt = False
+skelVisBUt = False
 button3_state = False
 
 #train decision tree
@@ -88,15 +88,23 @@ mainWindow.fill(240)
 
 
 # Define functions for button actions
-def toggle_button1():
-    global button1_state
-    button1_state = not button1_state
-    print(f"Button 1 state: {button1_state}")
+def startButCmd():
+    global startButt
+    startButt = not startButt
+    if button1["text"] == "Start":
+        button1["text"] = "Stop"
+    else:
+        button1["text"] = "Start"
+    print(f"Button 1 state: {startButt}")
 
 def toggle_button2():
-    global button2_state
-    button2_state = not button2_state
-    print(f"Button 2 state: {button2_state}")
+    global skelVisBUt
+    skelVisBUt = not skelVisBUt
+    if button2["text"] == "Skeleton vis. on":
+        button2["text"] = "Skeleton vis. off"
+    else:
+        button2["text"] = "Skeleton vis. on"
+    print(f"Button 2 state: {skelVisBUt}")
 
 def toggle_button3():
     global button3_state
@@ -220,7 +228,7 @@ def update_image():
 
     
         frameRecieved, frame = cap.read()
-        if frameRecieved:
+        if frameRecieved and startButt:
             global gFrameCount
             gFrameCount = gFrameCount + 1
             if gFrameCount % skippedFrames == 0:
@@ -287,8 +295,9 @@ def update_image():
             net.setInput(inpBlob)
             output = net.forward()
             points = openPose.GetPoints(output, frame)
-            frame = openPose.DrawSkeleton(frame, points)
-            frame, gHandsPoints = openPose.handsPos(frame, points)
+            if skelVisBUt:
+             frame = openPose.DrawSkeleton(frame, points)
+            frame, gHandsPoints = openPose.handsPos(frame, points, skelVisBUt)
     
             #frame = displayTableOnFrame(frame, gDfPredEm, gOfDomEm, gFrameCount)
             if gFrameCount % skippedFrames == 0:
@@ -317,7 +326,17 @@ def update_image():
                 print("App has been destroyed")
                 break 
 
-         
+        elif not startButt:
+            print("Waiting for start...")
+            try:
+                if root.winfo_exists() and canvas.winfo_exists():
+                    frame = cv2.rectangle(frame, (0, 0), (640, 360), (0, 0, 0), -1)
+                    img = ImageTk.PhotoImage(Image.fromarray(frame))
+                    canvas.create_image(0, 0, anchor=tk.NW, image=img)
+                    root.update()
+            except:
+                print("App has been destroyed")
+                break 
             
         else:
             print("Frame not recieved")
@@ -342,10 +361,10 @@ canvas = tk.Canvas(root, width=640, height=360)
 canvas.pack(side=tk.LEFT)
 
 # Create the buttons
-button1 = tk.Button(root, text="Button 1", command=toggle_button1)
+button1 = tk.Button(root, text="Start", command=startButCmd)
 button1.pack(side=tk.LEFT, padx=10, pady=10)
 
-button2 = tk.Button(root, text="Button 2", command=toggle_button2)
+button2 = tk.Button(root, text="Skeleton vis. on", command=toggle_button2)
 button2.pack(side=tk.LEFT, padx=10, pady=10)
 
 button3 = tk.Button(root, text="Button 3", command=toggle_button3)
