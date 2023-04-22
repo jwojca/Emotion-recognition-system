@@ -6,6 +6,8 @@ from matplotlib.patches import Ellipse
 import numpy as np
 import argparse
 import matplotlib.path as mpath
+from matplotlib.path import Path
+from matplotlib.patches import Circle
 
 protoFile = r'C:\Users\hwojc\Desktop\Diplomka\OpenPose\repo\openpose\models\pose\mpi\pose_deploy_linevec_faster_4_stages.prototxt'
 weightsFile = r'C:\Users\hwojc\Desktop\Diplomka\OpenPose\repo\openpose\models\pose\mpi\pose_iter_160000.caffemodel'
@@ -47,6 +49,7 @@ def customEllipse(center, ellAngle, diameter, arcStart, arcEnd):
     return e
 
 
+
 def isInside(e, point):
     # Check if the point is inside the path
     return e.contains_point(point)
@@ -76,93 +79,112 @@ def DrawSkeleton(frame, points):
     return frame
 
 def handsPos(frame, points):
-    #handPos is array containing vals of (RHInBottFace, LHInBottFace, RHInTopFace, LHInTopFace, rhRaised, lhRaised)
-    handsPos = [False, False, False, False, False, False]
+    #handPos is array containing vals of (RHInBottFace, LHInBottFace, RHInTopFace, LHInTopFace, rhRaised, lhRaised, RHInChes, LHInChest)
+    handsPos = [False, False, False, False, False, False, False, False]
     headDetected = points[0] and points[1]
     chestDetected = points[14] and points[1]
+    rightWrist = points[4]
+    leftWrist = points[7]
+    
     if headDetected:
+        diameter = math.dist(points[0], points[1])
+        midPoint = [0, 0]
+        # Define two points
+        pointArr0 = np.array(points[0])
+        pointArr1 = np.array(points[1])
+
+        # Calculate the midpoint
+        midpoint = (pointArr0 + pointArr1) / 2
+        weight = 0.4
+        adjMidpointTop = ((1 - weight) * pointArr1[0] + weight * pointArr0[0], (1 - weight) * pointArr1[1] + weight * pointArr0[1])
+        topElCent = tuple(np.round(adjMidpointTop).astype(int))
+
+        weight = 0.15
+        adjMidpointBot = ((1 - weight) * pointArr1[0] + weight * pointArr0[0], (1 - weight) * pointArr1[1] + weight * pointArr0[1])
+        botElCent = tuple(np.round(adjMidpointBot).astype(int))
+
+        
+
+        center = tuple(np.round(midpoint).astype(int))
+        ellAngle = angleFromVertical(points[0], points[1])
+        #cv2.circle(frame, center, round((diameter/2) * 1.2), (255, 0, 0), thickness = 2)
+
+        bottEl = customEllipse(botElCent, ellAngle, diameter, 0, 180)
+        topEl = customEllipse(topElCent, ellAngle, diameter, 180, 360)
+        
+        frame = drawCustomEllipse(bottEl, frame, (255, 0, 0))
+        frame = drawCustomEllipse(topEl, frame, (0, 0, 255))
+        
+        
+        e = Ellipse((int(center[0]), int(center[1])), 2*int(diameter/1.5), 2*int(diameter/1.2), ellAngle)
+        
+
+        if(rightWrist and not leftWrist):
+            #Check if is in face area
+            if isInside(bottEl, rightWrist):
+                #print("Right hand in face area")
+                handsPos[0] = True
+            elif isInside(topEl, rightWrist):
+                handsPos[2] = True
+
+            if rHandRaised(points, handsPos[0] or handsPos[2]):
+                handsPos[4] = True
+
             
-            rightWrist = points[4]
-            leftWrist = points[7]
-            diameter = math.dist(points[0], points[1])
-            midPoint = [0, 0]
-            # Define two points
-            pointArr0 = np.array(points[0])
-            pointArr1 = np.array(points[1])
+        elif(leftWrist and not rightWrist):
+            if isInside(bottEl, leftWrist):
+                #print("Left hand in face area")
+                handsPos[1] = True
+            elif isInside(topEl, leftWrist):
+                handsPos[3] = True
 
-            # Calculate the midpoint
-            midpoint = (pointArr0 + pointArr1) / 2
-            weight = 0.4
-            adjMidpointTop = ((1 - weight) * pointArr1[0] + weight * pointArr0[0], (1 - weight) * pointArr1[1] + weight * pointArr0[1])
-            topElCent = tuple(np.round(adjMidpointTop).astype(int))
+            if lHandRaised(points, handsPos[1] or handsPos[3]):
+                handsPos[5] = True
 
-            weight = 0.15
-            adjMidpointBot = ((1 - weight) * pointArr1[0] + weight * pointArr0[0], (1 - weight) * pointArr1[1] + weight * pointArr0[1])
-            botElCent = tuple(np.round(adjMidpointBot).astype(int))
+        elif(rightWrist and leftWrist):
+            #In Face
+            if isInside(bottEl, rightWrist):
+                handsPos[0] = True
+            elif isInside(topEl, rightWrist):
+                handsPos[2] = True
 
-            
+            if isInside(bottEl, leftWrist):
+                handsPos[1] = True
+            elif isInside(topEl, leftWrist):
+                handsPos[3] = True
 
-            center = tuple(np.round(midpoint).astype(int))
-            ellAngle = angleFromVertical(points[0], points[1])
-            #cv2.circle(frame, center, round((diameter/2) * 1.2), (255, 0, 0), thickness = 2)
-
-            bottEl = customEllipse(botElCent, ellAngle, diameter, 0, 180)
-            topEl = customEllipse(topElCent, ellAngle, diameter, 180, 360)
-            
-            frame = drawCustomEllipse(bottEl, frame, (255, 0, 0))
-            frame = drawCustomEllipse(topEl, frame, (0, 0, 255))
-            
-            
-            e = Ellipse((int(center[0]), int(center[1])), 2*int(diameter/1.5), 2*int(diameter/1.2), ellAngle)
-           
-
-            if(rightWrist and not leftWrist):
-                #Check if is in face area
-                if isInside(bottEl, rightWrist):
-                    #print("Right hand in face area")
-                    handsPos[0] = True
-                elif isInside(topEl, rightWrist):
-                    handsPos[2] = True
-
-                if rHandRaised(points, handsPos[0] or handsPos[2]):
-                    handsPos[4] = True
-
-                
-            elif(leftWrist and not rightWrist):
-                if isInside(bottEl, leftWrist):
-                    #print("Left hand in face area")
-                    handsPos[1] = True
-                elif isInside(topEl, leftWrist):
-                    handsPos[3] = True
-
-                if lHandRaised(points, handsPos[1] or handsPos[3]):
-                    handsPos[5] = True
-
-            elif(rightWrist and leftWrist):
-                #In Face
-                if isInside(bottEl, rightWrist):
-                    handsPos[0] = True
-                elif isInside(topEl, rightWrist):
-                    handsPos[2] = True
-
-                if isInside(bottEl, leftWrist):
-                    handsPos[1] = True
-                elif isInside(topEl, leftWrist):
-                    handsPos[3] = True
-
-                #Raised
-                if rHandRaised(points, handsPos[0] or handsPos[2]):
-                    handsPos[4] = True
-                if lHandRaised(points, handsPos[1] or handsPos[3]):
-                    handsPos[5] = True
-            else:
-                print("No hand in face area")
+            #Raised
+            if rHandRaised(points, handsPos[0] or handsPos[2]):
+                handsPos[4] = True
+            if lHandRaised(points, handsPos[1] or handsPos[3]):
+                handsPos[5] = True
+ 
 
     if chestDetected:
         chest = points[14]
         neck = points[1]
-        diameter = math.dist(chest, neck)/2
-        cv2.circle(frame, chest, int(diameter), (255, 0, 0), thickness = 2)
+        diameter = int(1.1 * math.dist(chest, neck)/2)
+        cv2.circle(frame, chest, diameter, (255, 0, 0), thickness = 2)
+        chestArea = Circle(chest, diameter)
+
+
+        if rightWrist and not leftWrist:
+            if chestArea.contains_point(rightWrist):
+                #print("RH in chest")
+                handsPos[6] = True
+        elif not rightWrist and  leftWrist:
+            if chestArea.contains_point(leftWrist):
+                #print("LH in chest")
+                handsPos[7] = True
+        elif rightWrist and  leftWrist:
+            if chestArea.contains_point(rightWrist):
+                #print("RH in chest")
+                handsPos[6] = True
+            if chestArea.contains_point(leftWrist):
+                #print("LH in chest")
+                handsPos[7] = True
+
+
 
 
     return (frame, handsPos)
@@ -196,7 +218,7 @@ def lHandRaised(points, inFace):
     else:
         return False
 
-def GetPoints(output, frame, frameCopy):
+def GetPoints(output, frame):
     frameWidth = frame.shape[1]
     frameHeight = frame.shape[0]
     threshold = 0.1
@@ -219,9 +241,6 @@ def GetPoints(output, frame, frameCopy):
         y = (frameHeight * point[1]) / H
 
         if prob > threshold : 
-            cv2.circle(frameCopy, (int(x), int(y)), 8, (0, 255, 255), thickness=-1, lineType=cv2.FILLED)
-            cv2.putText(frameCopy, "{}".format(i), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, lineType=cv2.LINE_AA)
-
             # Add the point to the list if the probability is greater than the threshold
             points.append((int(x), int(y)))
         else :

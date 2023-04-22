@@ -104,6 +104,7 @@ def predict(csvFilePath, clf_entropy, lastPosition, gSkipHeader):
                 if rows > 0:
                     if avgConf < 0.5:
                         ofDominantEm = "Low confidence"
+                        dominantEmPct = 0.0
                     else:
                         emPred = decTree.prediction(aus, clf_entropy)
                         ofDominantEm, dominantEmPct = GetDominantEmotion(emPred)
@@ -115,4 +116,4 @@ def predict(csvFilePath, clf_entropy, lastPosition, gSkipHeader):
     except FileNotFoundError:
         print("CSV file doesnt exist!")
 
-    return (ofDominantEm, lastPosition)
+    return (ofDominantEm, dominantEmPct, lastPosition)

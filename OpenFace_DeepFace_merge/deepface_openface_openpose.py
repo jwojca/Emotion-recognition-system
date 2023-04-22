@@ -31,51 +31,30 @@ import openFace
 import decTree
 
 
+def drawFrameOnWindow(windowImage, frame, topLeft):
 
+    # Add the frame to the specified position in the window
+    x, y = topLeft
+    frameHeight, frameWidth = frame.shape[:2]
+    windowImage[y:y+frameHeight, x:x+frameWidth] = frame
+    return windowImage
 
- 
-def displayTableOnFrame(frame, deepfaceOutput, openfaceOutput, numFrames):
-    # Define the table contents
-    table = [
-        ["DeepFace output:", str(deepfaceOutput)],
-        ["OpenFace output:", str(openfaceOutput)],
-        ["Frames:", str(numFrames)]
-    ]
-
-    # Define the font and font scale
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    fontScale = 0.5
-
-    # Define the size of each cell in the table
-    cellSize = (150, 25)
-
-    # Loop over the rows and columns of the table
-    for i in range(3):
-        for j in range(2):
-            # Define the position of the cell
-            x = j * cellSize[0]
-            y = i * cellSize[1]
-
-            # Draw the black rectangle behind the text
-            cv2.rectangle(frame, (x, y), (x + cellSize[0], y + cellSize[1]), (0, 0, 0), -1)
-
-            # Draw the text in the cell
-            cv2.putText(frame, table[i][j], (x + 5, y + 20), font, fontScale, (255, 255, 255), 1)
-
-    return frame
 
 def displayTableInWindow(deepfaceOutput, openfaceOutput, numFrames, handsPoints):
     # Define the table contents
+    numOfDec = 2
     table = [
-        ["DeepFace output:", str(deepfaceOutput)],
-        ["OpenFace output:", str(openfaceOutput)],
+        ["DeepFace output:", str(deepfaceOutput[0]) + ": " + str(round(deepfaceOutput[1], numOfDec)) + "%"],
+        ["OpenFace output:", str(openfaceOutput[0]) + ": " + str(round(openfaceOutput[1], numOfDec)) + "%"],
         ["Frames:", str(numFrames)],
         ["RH in Bot Face:", handsPoints[0]],
         ["LH in Bot Face:", handsPoints[1]],
         ["RH in Top Face:", handsPoints[2]],
         ["LH in Top Face:", handsPoints[3]],
         ["RH raised:", handsPoints[4]],
-        ["LH raised:", handsPoints[5]]
+        ["LH raised:", handsPoints[5]],
+        ["RH in chest:", handsPoints[6]],
+        ["LH in chest:", handsPoints[7]]
     ]
 
     # Define the font and font scale
@@ -84,12 +63,13 @@ def displayTableInWindow(deepfaceOutput, openfaceOutput, numFrames, handsPoints)
 
     # Define the size of each cell in the table
     cellSize = (180, 25)
+    cellSize2 = (250, 25)
 
     # Define the circle radius
     circleRadius = 5
 
     # Calculate the size of the window based on the number of rows in the table
-    windowWidth = cellSize[0] * 2
+    windowWidth = cellSize[0]  + cellSize2[0]
     windowHeight = cellSize[1] * len(table)
 
     # Create a new window using OpenCV
@@ -124,6 +104,7 @@ def displayTableInWindow(deepfaceOutput, openfaceOutput, numFrames, handsPoints)
 
     # Display the table in the window
     cv2.imshow("Table", tableImage)
+    return tableImage
 
 
 
@@ -151,24 +132,40 @@ if not cap.isOpened():
 
 gLastPosCsv = 0
 gSkipCsvHead = True
-gHandsPoints = [False, False, False]
+gHandsPoints = []
+gDfOutput = ('None', 0.0)
+gOfOutput = ('None', 0.0)
 
-start = time.time()
 
 
 frameCount = 0
 skippedFrames = 10
 dfPredEm = "None"
-ofDominantEm = "None"
+gOfDomEm = "None"
+gOfDomEmPct = 0.0
+gFPS = 0
+gEmotionDict = {
+    "Angry" : 0.0,
+    "Disgust" : 0.0,
+    "Fear" : 0.0,
+    "Happy" : 0.0,
+    "Sad" : 0.0,
+    "Surprise" : 0.0,
+    "Neutral" : 0.0
+}
 
 
 process = openFace.featuresExtractionWebcam()
 csvFilePath = openFace.checkCSV()
 
+# Create a window of size 1920x1080 with color (240, 240, 240)
+windowHeight, windowWidth = 1080, 1920
+mainWindow = np.zeros((windowHeight, windowWidth, 3), np.uint8)
+mainWindow.fill(240)
+
 
 start = time.time()
 while True:
-
     frameRecieved, frame = cap.read()
     if frameRecieved:
         frameCount = frameCount + 1
@@ -176,9 +173,15 @@ while True:
             try:
                 result = DeepFace.analyze(frame, actions = ['emotion'], enforce_detection= True)
                 dfPredEm = result['dominant_emotion']
+                domEmStr = str(result['dominant_emotion'])
+                dfPredEmPct = result['emotion'][domEmStr]
+                gDfOutput = (dfPredEm, dfPredEmPct)
             except:
                 dfPredEm = "Cannot detect face"
-            ofDominantEm, gLastPosCsv = openFace.predict(csvFilePath, clf_entropy, gLastPosCsv, gSkipCsvHead)
+                dfPredEmPct = 0.0
+                gDfOutput = (dfPredEm, dfPredEmPct)
+            gOfDomEm, gOfDomEmPct, gLastPosCsv = openFace.predict(csvFilePath, clf_entropy, gLastPosCsv, gSkipCsvHead)
+            gOfOutput = (gOfDomEm, gOfDomEmPct)
             gSkipCsvHead = False
          
             
@@ -190,26 +193,42 @@ while True:
                                 (0, 0, 0), swapRB=False, crop=False)
         net.setInput(inpBlob)
         output = net.forward()
-        points = openPose.GetPoints(output, frame, frameCopy)
+        points = openPose.GetPoints(output, frame)
         frame = openPose.DrawSkeleton(frame, points)
         frame, gHandsPoints = openPose.handsPos(frame, points)
   
-        frame = displayTableOnFrame(frame, dfPredEm, ofDominantEm, frameCount)
-        displayTableInWindow(dfPredEm, ofDominantEm, frameCount, gHandsPoints)
+        #frame = displayTableOnFrame(frame, dfPredEm, gOfDomEm, frameCount)
+        if frameCount % skippedFrames == 0:
+            end = time.time()
+            procTime = end - start
+            gFPS = round(skippedFrames/procTime)
+            print(gFPS)
+            start = end
 
-        cv2.imshow('Output-Skeleton', frame)
+        guiTable = displayTableInWindow(gDfOutput, gOfOutput, frameCount, gHandsPoints)
+        frame = cv2.rectangle(frame, (0, 0), (100, 30), (0, 0, 0), -1)
+        frame = cv2.putText(frame, "FPS: " + str(gFPS), (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1.3)
+        mainWindow = drawFrameOnWindow(mainWindow,frame, (0, 0))
+        mainWindow = drawFrameOnWindow(mainWindow, guiTable, (1000, 0))
+        #cv2.putText(tableImage, table[i][j], (x + 5, y + 20), font, fontScale, (255, 255, 255), 1)
+        
+        cv2.imshow('Output-Skeleton', mainWindow)
+        
         #print("Elapsed time: {:.2f} seconds".format(time.time() - start))
         
     else:
         print("Frame not recieved")
+    
+   
+    #print(end - start, " seconds")
 
     #Get key, if ESC, then end loop
     c = cv2.waitKey(1)
     if c == 27:
         break
 
-end = time.time()
-print(end - start, " seconds")
+
+
 process.terminate()
 cap.release()
 cv2.destroyAllWindows()
