@@ -30,7 +30,78 @@ import openPose
 import openFace
 import decTree
 
-import tkinter
+import tkinter as tk
+from PIL import Image, ImageTk
+
+# Define global variables
+button1_state = False
+button2_state = False
+button3_state = False
+
+#train decision tree
+trainData, testData = decTree.importdata()
+X_train, X_test, y_train, y_test = decTree.loaddataset(trainData, testData)
+clf_entropy = decTree.train_using_entropy(X_train, X_test, y_train, 7, 37)
+y_pred_entropy = decTree.prediction(X_test, clf_entropy)
+acc = decTree.cal_accuracy(y_test, y_pred_entropy)
+
+#Open Pose
+net = openPose.loadModel()
+
+#Init webcam
+cap = cv2.VideoCapture(0)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
+if not cap.isOpened():
+    raise IOError("Cannot open webcam")
+
+# Path to FaceLandmarkImg.exe and image file
+#exePath  = r"C:\Users\hwojc\Desktop\Diplomka\Open Face\OpenFace_2.2.0_win_x64\FeatureExtraction.exe"
+
+gLastPosCsv = 0
+gSkipCsvHead = True
+gHandsPoints = []
+gDfOutput = ('None', 0.0)
+gOfOutput = ('None', 0.0)
+
+
+
+gFrameCount = 0
+skippedFrames = 10
+gDfPredEm = "None"
+gOfDomEm = "None"
+gOfDomEmPct = 0.0
+gFPS = 0
+
+gFearOrSur = False
+
+gFinalEmotion = "None"
+
+
+process = openFace.featuresExtractionWebcam()
+csvFilePath = openFace.checkCSV()
+
+# Create a window of size 1920x1080 with color (240, 240, 240)
+windowHeight, windowWidth = 1080, 1920
+mainWindow = np.zeros((windowHeight, windowWidth, 3), np.uint8)
+mainWindow.fill(240)
+
+
+# Define functions for button actions
+def toggle_button1():
+    global button1_state
+    button1_state = not button1_state
+    print(f"Button 1 state: {button1_state}")
+
+def toggle_button2():
+    global button2_state
+    button2_state = not button2_state
+    print(f"Button 2 state: {button2_state}")
+
+def toggle_button3():
+    global button3_state
+    button3_state = not button3_state
+    print(f"Button 3 state: {button3_state}")
 
 
 def drawFrameOnWindow(windowImage, frame, topLeft):
@@ -109,178 +180,186 @@ def displayTableInWindow(deepfaceOutput, openfaceOutput, finalEmotion, numFrames
     cv2.imshow("Table", tableImage)
     return tableImage
 
+# Define function to update the image in the GUI
+def update_image():
+    global img, canvas
+    global gLastPosCsv
+    global gSkipCsvHead
+    global gHandsPoints
+    global gDfOutput
+    global gOfOutput
+    global gFrameCount
+    global skippedFrames 
+    global gDfPredEm 
+    global gOfDomEm 
+    global gOfDomEmPct 
+    global gFPS 
+    global gFearOrSur 
+    global gFinalEmotion 
+    global process 
+    global csvFilePath 
+    global start
+    global net
+    global cap
+    global mainWindow
+
+
+        
+    while True:
+        emotionDict = {
+        "Angry" : 0.0,
+        "Disgust" : 0.0,
+        "Fear" : 0.0,
+        "Happy" : 0.0,
+        "Sad" : 0.0,
+        "Surprise" : 0.0,
+        "Neutral" : 0.0
+        }   
+
+        gFearOrSur = False
+
+    
+        frameRecieved, frame = cap.read()
+        if frameRecieved:
+            global gFrameCount
+            gFrameCount = gFrameCount + 1
+            if gFrameCount % skippedFrames == 0:
+                try:
+                    result = DeepFace.analyze(frame, actions = ['emotion'], enforce_detection= True)
+                    gDfPredEm = result['dominant_emotion']
+                    domEmStr = str(result['dominant_emotion'])
+                    gDfPredEmPct = result['emotion'][domEmStr]
+                    gDfOutput = (gDfPredEm, gDfPredEmPct)
+                    emotionDict[domEmStr] = gDfPredEmPct
+                    if gDfPredEm == "Fear" or "Surprise":
+                        gFearOrSur = True
+                except:
+                    gDfPredEm = "Cannot detect face"
+                    gDfPredEmPct = 0.0
+                    gDfOutput = (gDfPredEm, gDfPredEmPct)
+                
+                try:
+                    gOfDomEm, gOfDomEmPct, gLastPosCsv = openFace.predict(csvFilePath, clf_entropy, gLastPosCsv, gSkipCsvHead)
+                    gOfOutput = (gOfDomEm, gOfDomEmPct)
+                    gSkipCsvHead = False
+
+                    handInChest = gHandsPoints[6] or gHandsPoints[7]
+                    handInBotFace = gHandsPoints[0] or gHandsPoints[1]
+                    handsInTopFace = gHandsPoints[2] and gHandsPoints[3]
+
+                    if gOfDomEm == "Fear" or "Surprise":
+                        gFearOrSur = True
+
+                    if gOfDomEm != "Low confidence":
+                        if handsInTopFace:
+                            emotionDict["Surprise"] += 100.0
+                        if handInBotFace:
+                            if gFearOrSur:
+                                emotionDict["Surprise"] += 100.0
+                                emotionDict["Fear"] += 100.0
+                            else:
+                                emotionDict["Surprise"] += 20.0
+                                emotionDict["Fear"] += 20.0
+
+
+                    emotionDict[str(gOfDomEm)] += gOfDomEmPct
+                    gFinalEmotion = max(emotionDict, key = emotionDict.get)
+                    
+                
+                    if handInChest and gFearOrSur:
+                        emotionDict["Fear"] += 200.0
+                    
+                    gFinalEmotion = max(emotionDict, key = emotionDict.get)
+                except:
+                    print("Low confidence")
+                    handInBotFace = gHandsPoints[0] or gHandsPoints[1]
+                    if handInBotFace:
+                        emotionDict["Fear"] += 100.0
+                    gFinalEmotion = max(emotionDict, key = emotionDict.get)
+            
+                
+            frameCopy = np.copy(frame)
+            # input image dimensions for the network
+            inWidth = 256
+            inHeight = 144
+            inpBlob = cv2.dnn.blobFromImage(frame, 1.0 / 255, (inWidth, inHeight),
+                                    (0, 0, 0), swapRB=False, crop=False)
+            net.setInput(inpBlob)
+            output = net.forward()
+            points = openPose.GetPoints(output, frame)
+            frame = openPose.DrawSkeleton(frame, points)
+            frame, gHandsPoints = openPose.handsPos(frame, points)
+    
+            #frame = displayTableOnFrame(frame, gDfPredEm, gOfDomEm, gFrameCount)
+            if gFrameCount % skippedFrames == 0:
+                end = time.time()
+                procTime = end - start
+                gFPS = round(skippedFrames/procTime)
+                start = end
+
+            guiTable = displayTableInWindow(gDfOutput, gOfOutput, gFinalEmotion, gFrameCount, gHandsPoints)
+            frame = cv2.rectangle(frame, (0, 0), (100, 60), (0, 0, 0), -1)
+            frame = cv2.putText(frame, "FPS: " + str(gFPS), (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            frame = cv2.putText(frame, str(gFinalEmotion), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            #mainWindow = drawFrameOnWindow(mainWindow,frame, (0, 0))
+            #mainWindow = drawFrameOnWindow(mainWindow, guiTable, (1000, 0))
+            #cv2.putText(tableImage, table[i][j], (x + 5, y + 20), font, fontScale, (255, 255, 255), 1)
+            
+            #cv2.imshow('Output-Skeleton', mainWindow)
+
+            try:
+                if root.winfo_exists() and canvas.winfo_exists():
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    img = ImageTk.PhotoImage(Image.fromarray(frame))
+                    canvas.create_image(0, 0, anchor=tk.NW, image=img)
+                    root.update()
+            except:
+                print("App has been destroyed")
+                break 
+
+         
+            
+        else:
+            print("Frame not recieved")
+            break
+        
+    
+        
+
+        #Get key, if ESC, then end loop
+        c = cv2.waitKey(1)
+        if c == 27:
+            break
+       
+        
 
 
 
+# Create the tkinter window and canvas
+root = tk.Tk()
+root.geometry("1920x1080")
+canvas = tk.Canvas(root, width=640, height=360)
+canvas.pack(side=tk.LEFT)
 
-#train decision tree
-trainData, testData = decTree.importdata()
-X_train, X_test, y_train, y_test = decTree.loaddataset(trainData, testData)
-clf_entropy = decTree.train_using_entropy(X_train, X_test, y_train, 7, 37)
-y_pred_entropy = decTree.prediction(X_test, clf_entropy)
-acc = decTree.cal_accuracy(y_test, y_pred_entropy)
+# Create the buttons
+button1 = tk.Button(root, text="Button 1", command=toggle_button1)
+button1.pack(side=tk.LEFT, padx=10, pady=10)
 
-#Open Pose
-net = openPose.loadModel()
+button2 = tk.Button(root, text="Button 2", command=toggle_button2)
+button2.pack(side=tk.LEFT, padx=10, pady=10)
 
-#Init webcam
-cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
-if not cap.isOpened():
-    raise IOError("Cannot open webcam")
-
-# Path to FaceLandmarkImg.exe and image file
-#exePath  = r"C:\Users\hwojc\Desktop\Diplomka\Open Face\OpenFace_2.2.0_win_x64\FeatureExtraction.exe"
-
-gLastPosCsv = 0
-gSkipCsvHead = True
-gHandsPoints = []
-gDfOutput = ('None', 0.0)
-gOfOutput = ('None', 0.0)
-
-
-
-frameCount = 0
-skippedFrames = 10
-gDfPredEm = "None"
-gOfDomEm = "None"
-gOfDomEmPct = 0.0
-gFPS = 0
-
-gFearOrSur = False
-
-gFinalEmotion = "None"
-
-
-process = openFace.featuresExtractionWebcam()
-csvFilePath = openFace.checkCSV()
-
-# Create a window of size 1920x1080 with color (240, 240, 240)
-windowHeight, windowWidth = 1080, 1920
-mainWindow = np.zeros((windowHeight, windowWidth, 3), np.uint8)
-mainWindow.fill(240)
+button3 = tk.Button(root, text="Button 3", command=toggle_button3)
+button3.pack(side=tk.LEFT, padx=10, pady=10)
 
 
 start = time.time()
-while True:
-    emotionDict = {
-    "Angry" : 0.0,
-    "Disgust" : 0.0,
-    "Fear" : 0.0,
-    "Happy" : 0.0,
-    "Sad" : 0.0,
-    "Surprise" : 0.0,
-    "Neutral" : 0.0
-    }   
 
-    gFearOrSur = False
+# Start the GUI loop and update the image
+update_image()
+root.mainloop()
 
-    frameRecieved, frame = cap.read()
-    if frameRecieved:
-        frameCount = frameCount + 1
-        if frameCount % skippedFrames == 0:
-            try:
-                result = DeepFace.analyze(frame, actions = ['emotion'], enforce_detection= True)
-                gDfPredEm = result['dominant_emotion']
-                domEmStr = str(result['dominant_emotion'])
-                gDfPredEmPct = result['emotion'][domEmStr]
-                gDfOutput = (gDfPredEm, gDfPredEmPct)
-                emotionDict[domEmStr] = gDfPredEmPct
-                if gDfPredEm == "Fear" or "Surprise":
-                    gFearOrSur = True
-            except:
-                gDfPredEm = "Cannot detect face"
-                gDfPredEmPct = 0.0
-                gDfOutput = (gDfPredEm, gDfPredEmPct)
-            
-            try:
-                gOfDomEm, gOfDomEmPct, gLastPosCsv = openFace.predict(csvFilePath, clf_entropy, gLastPosCsv, gSkipCsvHead)
-                gOfOutput = (gOfDomEm, gOfDomEmPct)
-                gSkipCsvHead = False
-
-                handInChest = gHandsPoints[6] or gHandsPoints[7]
-                handInBotFace = gHandsPoints[0] or gHandsPoints[1]
-                handsInTopFace = gHandsPoints[2] and gHandsPoints[3]
-
-                if gOfDomEm == "Fear" or "Surprise":
-                    gFearOrSur = True
-
-                if gOfDomEm != "Low confidence":
-                    if handsInTopFace:
-                        emotionDict["Surprise"] += 100.0
-                    if handInBotFace:
-                        if gFearOrSur:
-                            emotionDict["Surprise"] += 100.0
-                            emotionDict["Fear"] += 100.0
-                        else:
-                            emotionDict["Surprise"] += 20.0
-                            emotionDict["Fear"] += 20.0
-
-
-                emotionDict[str(gOfDomEm)] += gOfDomEmPct
-                gFinalEmotion = max(emotionDict, key = emotionDict.get)
-                
-               
-                if handInChest and gFearOrSur:
-                    emotionDict["Fear"] += 200.0
-                
-                gFinalEmotion = max(emotionDict, key = emotionDict.get)
-            except:
-                print("Low confidence")
-                handInBotFace = gHandsPoints[0] or gHandsPoints[1]
-                if handInBotFace:
-                    emotionDict["Fear"] += 100.0
-                gFinalEmotion = max(emotionDict, key = emotionDict.get)
-         
-            
-        frameCopy = np.copy(frame)
-        # input image dimensions for the network
-        inWidth = 256
-        inHeight = 144
-        inpBlob = cv2.dnn.blobFromImage(frame, 1.0 / 255, (inWidth, inHeight),
-                                (0, 0, 0), swapRB=False, crop=False)
-        net.setInput(inpBlob)
-        output = net.forward()
-        points = openPose.GetPoints(output, frame)
-        frame = openPose.DrawSkeleton(frame, points)
-        frame, gHandsPoints = openPose.handsPos(frame, points)
-  
-        #frame = displayTableOnFrame(frame, gDfPredEm, gOfDomEm, frameCount)
-        if frameCount % skippedFrames == 0:
-            end = time.time()
-            procTime = end - start
-            gFPS = round(skippedFrames/procTime)
-            print(gFPS)
-            start = end
-
-        guiTable = displayTableInWindow(gDfOutput, gOfOutput, gFinalEmotion, frameCount, gHandsPoints)
-        frame = cv2.rectangle(frame, (0, 0), (100, 60), (0, 0, 0), -1)
-        frame = cv2.putText(frame, "FPS: " + str(gFPS), (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        frame = cv2.putText(frame, str(gFinalEmotion), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        mainWindow = drawFrameOnWindow(mainWindow,frame, (0, 0))
-        mainWindow = drawFrameOnWindow(mainWindow, guiTable, (1000, 0))
-        #cv2.putText(tableImage, table[i][j], (x + 5, y + 20), font, fontScale, (255, 255, 255), 1)
-        
-        cv2.imshow('Output-Skeleton', mainWindow)
-        
-        #print("Elapsed time: {:.2f} seconds".format(time.time() - start))
-        
-    else:
-        print("Frame not recieved")
-    
-   
-    #print(end - start, " seconds")
-
-    #Get key, if ESC, then end loop
-    c = cv2.waitKey(1)
-    if c == 27:
-        break
-
-
-
-process.terminate()
 cap.release()
+openFace.destroyProcess(process)
 cv2.destroyAllWindows()
 
 

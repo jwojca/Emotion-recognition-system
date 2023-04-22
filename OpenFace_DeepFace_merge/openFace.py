@@ -117,3 +117,6 @@ def predict(csvFilePath, clf_entropy, lastPosition, gSkipHeader):
         print("CSV file doesnt exist!")
 
     return (ofDominantEm, dominantEmPct, lastPosition)
+
+def destroyProcess(process):
+    process.terminate()
