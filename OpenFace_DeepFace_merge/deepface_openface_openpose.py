@@ -86,6 +86,9 @@ gFinalEmotion = "None"
 testStart = 0
 testEnd = 0
 
+gWebcamCanvasShape = (640, 420)
+gTableCanvasShape = (500, 500)
+
 
 process = openFace.featuresExtractionWebcam()
 csvFilePath = openFace.checkCSV()
@@ -129,6 +132,7 @@ def butt1Cmd():
 
 def butt2Cmd():
     global button2State
+    #global tableCanvas
     button2State = not button2State
     if button2State:
         button2["text"] = "Turn off"
@@ -283,7 +287,7 @@ def displayTableInWindow(deepfaceOutput, openfaceOutput, finalEmotion, numFrames
 
 # Define function to update the image in the GUI
 def update_image():
-    global img, canvas
+    global img, webcamCanvas, gWebcamCanvasShape, gTableCanvasShape
     global gLastPosCsv
     global gSkipCsvHead
     global gHandsPoints
@@ -423,24 +427,44 @@ def update_image():
 
             try:
                 frameFinal = np.concatenate((stripe, frame), axis = 0)
-                if root.winfo_exists() and canvas.winfo_exists():
+                if root.winfo_exists() and webcamCanvas.winfo_exists():
+                    #create webcam canvas
                     frameFinal = cv2.cvtColor(frameFinal, cv2.COLOR_BGR2RGB)
                     img = ImageTk.PhotoImage(Image.fromarray(frameFinal))
-                    canvas.create_image(0, 0, anchor=tk.NW, image=img)
+                    webcamCanvas.create_image(0, 0, anchor=tk.NW, image=img)
+
+                    #create table canvas
+                    if button2State:
+                        guiTable = cv2.cvtColor(guiTable, cv2.COLOR_BGR2RGB)  
+                    else:
+                        h, w, c = guiTable.shape    
+                        guiTable = np.zeros((h, w, 3), np.uint8)
+                        guiTable.fill(240)
+                     
+                    tableImg = ImageTk.PhotoImage(Image.fromarray(guiTable))
+                    tableCanvas.create_image(0, 0, anchor=tk.NW, image=tableImg, tags = 'tableImg')
+
+                
+                    #if not button2State and state != 'hidden':     
+                    #    tableCanvas.itemconfig('tableImg', state = 'hidden')  
+                                              
                     root.update()
                     
             except:
                 print("App has been destroyed")
                 break 
         
+        
         elif not startButt:
             frameFinal = np.concatenate((stripe, frame), axis = 0)
+            #print(frameFinal.shape)
+
             print("Waiting for start...")
             try:
-                if root.winfo_exists() and canvas.winfo_exists():
-                    frameFinal = cv2.rectangle(frameFinal, (0, 0), (640, 420), (0, 0, 0), -1)
+                if root.winfo_exists() and webcamCanvas.winfo_exists():
+                    frameFinal = cv2.rectangle(frameFinal, (0, 0), gWebcamCanvasShape, (0, 0, 0), -1)
                     img = ImageTk.PhotoImage(Image.fromarray(frameFinal))
-                    canvas.create_image(0, 0, anchor=tk.NW, image=img)
+                    webcamCanvas.create_image(0, 0, anchor=tk.NW, image=img)
                     root.update()
             except:
                 print("App has been destroyed")
@@ -449,6 +473,7 @@ def update_image():
         else:
             print("Frame not recieved")
             break
+
         
         testEnd = time.time()
         #print(testEnd - testStart)
@@ -468,6 +493,7 @@ def update_image():
 root = tk.Tk()
 root.geometry("1920x1080")
 root.state("zoomed")
+root.title('Emotion Recognition System')
 webcamPos = (10, 10)
 
 buttPosOrig = (180, 10)
@@ -476,8 +502,8 @@ buttYOffset = 40
 buttTextPosOrig = (50, 10)
 
 
-canvas = tk.Canvas(root, width=640, height=420)
-canvas.place(x = webcamPos[0], y = webcamPos[1])
+webcamCanvas = tk.Canvas(root, width=gWebcamCanvasShape[0], height=gWebcamCanvasShape[1])
+webcamCanvas.place(x = webcamPos[0], y = webcamPos[1])
 
 rectWidth = 250
 rectHeight = 350
@@ -492,6 +518,10 @@ rectCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + 3 * buttYOffset,
 rectCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + 4 * buttYOffset, text = "OpenPose skeleton", fill="black", anchor=tk.NW)
 rectCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + 5 * buttYOffset, text = "Face areas", fill="black", anchor=tk.NW)
 rectCanvas.place(x = rectPos[0], y = rectPos[1])
+
+tableCanvas = tk.Canvas(root, width=gTableCanvasShape[0], height=gTableCanvasShape[1])
+tableCanvas.place(x = 300, y = 450)
+
 
 # Create the buttons
 button1Pos = (buttPosOrig[0], buttPosOrig[1])
