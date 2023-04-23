@@ -30,6 +30,9 @@ import openPose
 import openFace
 import decTree
 
+import win32gui
+import win32con
+
 import tkinter as tk
 from PIL import Image, ImageTk
 
@@ -77,6 +80,9 @@ gFearOrSur = False
 
 gFinalEmotion = "None"
 
+testStart = 0
+testEnd = 0
+
 
 process = openFace.featuresExtractionWebcam()
 csvFilePath = openFace.checkCSV()
@@ -85,6 +91,14 @@ csvFilePath = openFace.checkCSV()
 windowHeight, windowWidth = 1080, 1920
 mainWindow = np.zeros((windowHeight, windowWidth, 3), np.uint8)
 mainWindow.fill(240)
+
+gHwnd = win32gui.FindWindow(None, "tracking result")
+# Check if the window was found
+if gHwnd != 0:
+    print("Window found with handle", gHwnd)
+else:
+    print("Window not found")
+
 
 
 # Define functions for button actions
@@ -109,6 +123,20 @@ def toggle_button2():
 def toggle_button3():
     global button3_state
     button3_state = not button3_state
+
+    if button3_state:
+        win32gui.ShowWindow(gHwnd, win32con.SW_SHOWNORMAL)
+        left, top, right, bottom = win32gui.GetWindowRect(gHwnd)
+        width, height = right - left, bottom - top
+        print(width, height)
+        height = 460
+        win32gui.MoveWindow(gHwnd, -7, 0, width, height, True)
+        win32gui.SetWindowPos(gHwnd, win32con.HWND_TOPMOST, 0,0,0,0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+    else:
+        win32gui.ShowWindow(gHwnd, win32con.SW_MINIMIZE)
+        
+
+
     print(f"Button 3 state: {button3_state}")
 
 
@@ -210,8 +238,10 @@ def update_image():
     global net
     global cap
     global mainWindow
+    global gHwnd
+    global testStart, testEnd
 
-
+    start = time.time()
         
     while True:
         emotionDict = {
@@ -285,7 +315,7 @@ def update_image():
                         emotionDict["Fear"] += 100.0
                     gFinalEmotion = max(emotionDict, key = emotionDict.get)
             
-                
+            testStart = time.time()
             frameCopy = np.copy(frame)
             # input image dimensions for the network
             inWidth = 256
@@ -310,6 +340,11 @@ def update_image():
             frame = cv2.rectangle(frame, (0, 0), (100, 60), (0, 0, 0), -1)
             frame = cv2.putText(frame, "FPS: " + str(gFPS), (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
             frame = cv2.putText(frame, str(gFinalEmotion), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+
+            
+            
+              
+
             #mainWindow = drawFrameOnWindow(mainWindow,frame, (0, 0))
             #mainWindow = drawFrameOnWindow(mainWindow, guiTable, (1000, 0))
             #cv2.putText(tableImage, table[i][j], (x + 5, y + 20), font, fontScale, (255, 255, 255), 1)
@@ -322,6 +357,7 @@ def update_image():
                     img = ImageTk.PhotoImage(Image.fromarray(frame))
                     canvas.create_image(0, 0, anchor=tk.NW, image=img)
                     root.update()
+                    
             except:
                 print("App has been destroyed")
                 break 
@@ -342,6 +378,8 @@ def update_image():
             print("Frame not recieved")
             break
         
+        testEnd = time.time()
+        #print(testEnd - testStart)
     
         
 
@@ -371,7 +409,7 @@ button3 = tk.Button(root, text="Button 3", command=toggle_button3)
 button3.pack(side=tk.LEFT, padx=10, pady=10)
 
 
-start = time.time()
+
 
 # Start the GUI loop and update the image
 update_image()
