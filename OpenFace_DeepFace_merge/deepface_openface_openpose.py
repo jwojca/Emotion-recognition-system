@@ -96,6 +96,9 @@ mainWindow = np.zeros((windowHeight, windowWidth, 3), np.uint8)
 mainWindow.fill(240)
 
 
+
+
+
 #TODO as functions
 
 gOfWindow = win32gui.FindWindow(None, "tracking result")
@@ -144,7 +147,7 @@ def butt3Cmd():
         left, top, right, bottom = win32gui.GetWindowRect(gOfWindow)
         width, height = right - left, bottom - top
         print(width, height)
-        height = 400
+        height = 420
         width = 640
         style = win32gui.GetWindowLong(gOfWindow, win32con.GWL_STYLE)
         # Modify the window style to remove the title bar
@@ -302,6 +305,7 @@ def update_image():
     global mainWindow
     global gOfWindow,gAusWindow
     global testStart, testEnd
+    global stripe
 
     start = time.time()
         
@@ -315,6 +319,8 @@ def update_image():
         "Surprise" : 0.0,
         "Neutral" : 0.0
         }   
+        stripe = np.zeros((60, 640, 3), np.uint8)
+        stripe = cv2.rectangle(stripe, (0, 0), (640, 60), (0, 0, 0), -1)
 
         gFearOrSur = False
 
@@ -404,16 +410,10 @@ def update_image():
             #frame = cv2.putText(frame, str(gFinalEmotion), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
 
-            stripe = np.zeros((60, 640, 3), np.uint8)
-            stripe = cv2.rectangle(stripe, (0, 0), (640, 60), (0, 0, 0), -1)
+            
             stripe = cv2.putText(stripe, "FPS: " + str(gFPS), (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
             stripe = cv2.putText(stripe, str(gFinalEmotion), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-            frameFinal = np.concatenate((stripe, frame), axis = 0)
-            cv2.imshow('test', frameFinal)
-
             
-            
-              
 
             #mainWindow = drawFrameOnWindow(mainWindow,frame, (0, 0))
             #mainWindow = drawFrameOnWindow(mainWindow, guiTable, (1000, 0))
@@ -422,22 +422,24 @@ def update_image():
             #cv2.imshow('Output-Skeleton', mainWindow)
 
             try:
+                frameFinal = np.concatenate((stripe, frame), axis = 0)
                 if root.winfo_exists() and canvas.winfo_exists():
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    img = ImageTk.PhotoImage(Image.fromarray(frame))
+                    frameFinal = cv2.cvtColor(frameFinal, cv2.COLOR_BGR2RGB)
+                    img = ImageTk.PhotoImage(Image.fromarray(frameFinal))
                     canvas.create_image(0, 0, anchor=tk.NW, image=img)
                     root.update()
                     
             except:
                 print("App has been destroyed")
                 break 
-
+        
         elif not startButt:
+            frameFinal = np.concatenate((stripe, frame), axis = 0)
             print("Waiting for start...")
             try:
                 if root.winfo_exists() and canvas.winfo_exists():
-                    frame = cv2.rectangle(frame, (0, 0), (640, 420), (0, 0, 0), -1)
-                    img = ImageTk.PhotoImage(Image.fromarray(frame))
+                    frameFinal = cv2.rectangle(frameFinal, (0, 0), (640, 420), (0, 0, 0), -1)
+                    img = ImageTk.PhotoImage(Image.fromarray(frameFinal))
                     canvas.create_image(0, 0, anchor=tk.NW, image=img)
                     root.update()
             except:
@@ -478,8 +480,8 @@ canvas = tk.Canvas(root, width=640, height=420)
 canvas.place(x = webcamPos[0], y = webcamPos[1])
 
 rectWidth = 250
-rectHeight = 390
-rectPos = (10, 400)
+rectHeight = 350
+rectPos = (10, 450)
 rectBorder = 1
 rectCanvas = tk.Canvas(root, width = rectWidth + 1, height = rectHeight + 1)
 rectCanvas.create_rectangle(rectBorder + 1, rectBorder + 1, rectWidth, rectHeight, width = rectBorder)
