@@ -40,6 +40,9 @@ from PIL import Image, ImageTk
 startButt = False
 skelVisBUt = False
 button3_state = False
+button4State = False
+button5State = False
+button6State = False
 
 #train decision tree
 trainData, testData = decTree.importdata()
@@ -102,7 +105,7 @@ else:
 
 
 # Define functions for button actions
-def startButCmd():
+def butt1Cmd():
     global startButt
     startButt = not startButt
     if button1["text"] == "Start":
@@ -111,16 +114,16 @@ def startButCmd():
         button1["text"] = "Start"
     print(f"Button 1 state: {startButt}")
 
-def toggle_button2():
+def butt2Cmd():
     global skelVisBUt
     skelVisBUt = not skelVisBUt
-    if button2["text"] == "Skeleton vis. on":
-        button2["text"] = "Skeleton vis. off"
+    if skelVisBUt:
+        button2["text"] = "Turn off"
     else:
-        button2["text"] = "Skeleton vis. on"
+        button2["text"] = "Turn on"
     print(f"Button 2 state: {skelVisBUt}")
 
-def toggle_button3():
+def butt3Cmd():
     global button3_state
     button3_state = not button3_state
 
@@ -132,12 +135,38 @@ def toggle_button3():
         height = 460
         win32gui.MoveWindow(gHwnd, -7, 0, width, height, True)
         win32gui.SetWindowPos(gHwnd, win32con.HWND_TOPMOST, 0,0,0,0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+        button3["text"] = "Turn off"
     else:
         win32gui.ShowWindow(gHwnd, win32con.SW_MINIMIZE)
-        
-
-
+        button3["text"] = "Turn on"
     print(f"Button 3 state: {button3_state}")
+
+def butt4Cmd():
+    global button4State
+    button4State = not button4State
+    if button4State:
+        button4["text"] = "Turn off"
+    else:
+        button4["text"] = "Turn on"
+    print(f"Button 4 state: {button4}")
+
+def butt5Cmd():
+    global button5State
+    button5State = not button5State
+    if button5State:
+        button5["text"] = "Turn off"
+    else:
+        button5["text"] = "Turn on"
+    print(f"Button 5 state: {button5}")
+
+def butt6Cmd():
+    global button6State
+    button6State = not button6State
+    if button6State:
+        button6["text"] = "Turn off"
+    else:
+        button6["text"] = "Turn on"
+    print(f"Button 6 state: {button6}")
 
 
 def drawFrameOnWindow(windowImage, frame, topLeft):
@@ -395,21 +424,57 @@ def update_image():
 # Create the tkinter window and canvas
 root = tk.Tk()
 root.geometry("1920x1080")
+webcamPos = (10, 10)
+
+buttPosOrig = (190, 410)
+buttYOffset = 40
+
+buttTextPosOrig = (50, 23)
+
+
 canvas = tk.Canvas(root, width=640, height=360)
-canvas.pack(side=tk.LEFT)
+canvas.place(x = webcamPos[0], y = webcamPos[1])
+
+rectWidth = 250
+rectHeight = 390
+rectPos = (10, 400)
+rectBorder = 1
+rectCanvas = tk.Canvas(root, width = rectWidth + 1, height = rectHeight + 1)
+rectCanvas.create_rectangle(rectBorder + 1, rectBorder + 1, rectWidth, rectHeight, width = rectBorder)
+rectCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1], text = "Text text", fill="black", anchor=tk.W)
+rectCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + buttYOffset, text = "Table", fill="black",anchor=tk.W)
+rectCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + 2 * buttYOffset, text = "OpenFace webcam", fill="black", anchor=tk.W)
+rectCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + 3 * buttYOffset, text = "Action units", fill="black", anchor=tk.W)
+rectCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + 4 * buttYOffset, text = "OpenPose skeleton", fill="black", anchor=tk.W)
+rectCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + 5 * buttYOffset, text = "Face areas", fill="black", anchor=tk.W)
+rectCanvas.place(x = rectPos[0], y = rectPos[1])
 
 # Create the buttons
-button1 = tk.Button(root, text="Start", command=startButCmd)
-button1.pack(side=tk.LEFT, padx=10, pady=10)
-
-button2 = tk.Button(root, text="Skeleton vis. on", command=toggle_button2)
-button2.pack(side=tk.LEFT, padx=10, pady=10)
-
-button3 = tk.Button(root, text="Button 3", command=toggle_button3)
-button3.pack(side=tk.LEFT, padx=10, pady=10)
 
 
+button1Pos = (buttPosOrig[0], buttPosOrig[1])
+button1 = tk.Button(root, text="Start", command=butt1Cmd)
+button1.place(x = button1Pos[0], y = button1Pos[1])
 
+button2Pos = (buttPosOrig[0], buttPosOrig[1] + buttYOffset)
+button2 = tk.Button(root, text="Turn on", command=butt2Cmd)
+button2.place(x = button2Pos[0], y = button2Pos[1])
+
+button3Pos = (buttPosOrig[0], buttPosOrig[1] + 2*buttYOffset)
+button3 = tk.Button(root, text="Turn on", command=butt3Cmd)
+button3.place(x = button3Pos[0], y = button3Pos[1])
+
+button4Pos = (buttPosOrig[0], buttPosOrig[1] + 3*buttYOffset)
+button4 = tk.Button(root, text="Turn on", command=butt4Cmd)
+button4.place(x = button4Pos[0], y = button4Pos[1])
+
+button5Pos = (buttPosOrig[0], buttPosOrig[1] + 4*buttYOffset)
+button5 = tk.Button(root, text="Turn on", command=butt5Cmd)
+button5.place(x = button5Pos[0], y = button5Pos[1])
+
+button6Pos = (buttPosOrig[0], buttPosOrig[1] + 5*buttYOffset)
+button6 = tk.Button(root, text="Turn on", command=butt6Cmd)
+button6.place(x = button6Pos[0], y = button6Pos[1])
 
 # Start the GUI loop and update the image
 update_image()
