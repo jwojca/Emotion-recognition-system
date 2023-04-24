@@ -29,6 +29,7 @@ from collections import Counter
 import openPose
 import openFace
 import decTree
+import gui
 
 import win32gui
 import win32con
@@ -73,7 +74,7 @@ gOfOutput = ('None', 0.0)
 
 
 gFrameCount = 0
-skippedFrames = 10
+skippedFrames = 5
 gDfPredEm = "None"
 gOfDomEm = "None"
 gOfDomEmPct = 0.0
@@ -252,8 +253,8 @@ def displayTableInWindow(deepfaceOutput, openfaceOutput, finalEmotion, numFrames
     windowHeight = cellSize[1] * len(table)
 
     # Create a new window using OpenCV
-    cv2.namedWindow("Table", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("Table", windowWidth, windowHeight)
+    #cv2.namedWindow("Table", cv2.WINDOW_NORMAL)
+    #cv2.resizeWindow("Table", windowWidth, windowHeight)
 
     # Create an empty image for the table
     tableImage = np.zeros((windowHeight, windowWidth, 3), dtype=np.uint8)
@@ -282,7 +283,7 @@ def displayTableInWindow(deepfaceOutput, openfaceOutput, finalEmotion, numFrames
                  cv2.putText(tableImage, table[i][j], (x + 5, y + 20), font, fontScale, (255, 255, 255), 1)
 
     # Display the table in the window
-    cv2.imshow("Table", tableImage)
+    #cv2.imshow("Table", tableImage)
     return tableImage
 
 # Define function to update the image in the GUI
@@ -389,6 +390,7 @@ def update_image():
             
             testStart = time.time()
             frameCopy = np.copy(frame)
+
             # input image dimensions for the network
             inWidth = 256
             inHeight = 144
@@ -460,6 +462,7 @@ def update_image():
             #print(frameFinal.shape)
 
             print("Waiting for start...")
+            time.sleep(0.1)
             try:
                 if root.winfo_exists() and webcamCanvas.winfo_exists():
                     frameFinal = cv2.rectangle(frameFinal, (0, 0), gWebcamCanvasShape, (0, 0, 0), -1)
@@ -525,7 +528,7 @@ tableCanvas.place(x = 300, y = 450)
 
 # Create the buttons
 button1Pos = (buttPosOrig[0], buttPosOrig[1])
-button1 = tk.Button(rectCanvas, text="Start", command=butt1Cmd)
+button1 = tk.Button(rectCanvas, text= "Start" , command = butt1Cmd)
 button1.place(x = button1Pos[0], y = button1Pos[1])
 
 button2Pos = (buttPosOrig[0], buttPosOrig[1] + buttYOffset)
