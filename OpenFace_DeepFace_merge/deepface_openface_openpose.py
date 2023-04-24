@@ -41,9 +41,6 @@ gSkipCsvHead = True
 gHandsPoints = []
 gDfOutput = ('None', 0.0)
 gOfOutput = ('None', 0.0)
-
-
-
 gFrameCount = 0
 skippedFrames = 5
 gDfPredEm = "None"
@@ -51,7 +48,6 @@ gOfDomEm = "None"
 gOfDomEmPct = 0.0
 gFPS = 0
 
-gFearOrSur = False
 
 gFinalEmotion = "None"
 
@@ -63,11 +59,6 @@ gWebcamCanvasShape = gui.gWebcamCanvasShape
 
 process = openFace.featuresExtractionWebcam()
 csvFilePath = openFace.checkCSV()
-
-
-
-
-
 
 
 def drawFrameOnWindow(windowImage, frame, topLeft):
@@ -98,12 +89,12 @@ def displayTableInWindow(deepfaceOutput, openfaceOutput, finalEmotion, numFrames
     ]
 
     # Define the font and font scale
-    font = cv2.FONT_HERSHEY_SIMPLEX
+    font = cv2.FONT_HERSHEY_SIMPLEX 
     fontScale = 0.5
 
     # Define the size of each cell in the table
     cellSize = (180, 25)
-    cellSize2 = (250, 25)
+    cellSize2 = (235, 25)
 
     # Define the circle radius
     circleRadius = 5
@@ -118,6 +109,8 @@ def displayTableInWindow(deepfaceOutput, openfaceOutput, finalEmotion, numFrames
 
     # Create an empty image for the table
     tableImage = np.zeros((windowHeight, windowWidth, 3), dtype=np.uint8)
+    # Draw the black rectangle behind the text
+    cv2.rectangle(tableImage, (0, 0), (windowWidth, windowHeight), (250, 250, 250), -1)
 
     # Loop over the rows and columns of the table
     for i in range(len(table)):
@@ -125,22 +118,17 @@ def displayTableInWindow(deepfaceOutput, openfaceOutput, finalEmotion, numFrames
             # Define the position of the cell
             x = j * cellSize[0]
             y = i * cellSize[1]
-
-            # Draw the black rectangle behind the text
-            cv2.rectangle(tableImage, (x, y), (x + cellSize[0], y + cellSize[1]), (0, 0, 0), -1)
-
-            
+            rectOffset = 6
 
             # Draw the circle for boolean values
             if j == 1 and isinstance(table[i][j], bool):
-                circleCenter = (x + circleRadius, y + 15)
                 if table[i][j]:
-                    cv2.circle(tableImage, circleCenter, circleRadius, (0, 255, 0), -1)
+                    cv2.rectangle(tableImage, (x + rectOffset, y + rectOffset), (x + cellSize[1] - rectOffset, y + cellSize[1] - rectOffset), (0, 0, 0), -1)
                 else:
-                    cv2.circle(tableImage, circleCenter, circleRadius, (0, 0, 255), 1)
+                    cv2.rectangle(tableImage, (x + rectOffset, y + rectOffset), (x + cellSize[1] - rectOffset, y + cellSize[1] - rectOffset), (0, 0, 0), 1)
             else:
                 # Draw the text in the cell
-                 cv2.putText(tableImage, table[i][j], (x + 5, y + 20), font, fontScale, (255, 255, 255), 1)
+                 cv2.putText(tableImage, table[i][j], (x + 5, y + 20), font, fontScale, (0, 0, 0), 1)
 
     # Display the table in the window
     #cv2.imshow("Table", tableImage)
@@ -160,7 +148,6 @@ def update_image():
     global gOfDomEm 
     global gOfDomEmPct 
     global gFPS 
-    global gFearOrSur 
     global gFinalEmotion 
     global process 
     global csvFilePath 
@@ -191,9 +178,8 @@ def update_image():
         button5State = gui.button5State
         button6State = gui.button6State
 
-        gFearOrSur = False
+        fearOrSur = False
 
-    
         frameRecieved, frame = cap.read()
         if frameRecieved and startButt:
             global gFrameCount
@@ -207,7 +193,7 @@ def update_image():
                     gDfOutput = (gDfPredEm, gDfPredEmPct)
                     emotionDict[domEmStr] = gDfPredEmPct
                     if gDfPredEm == "Fear" or "Surprise":
-                        gFearOrSur = True
+                        fearOrSur = True
                 except:
                     gDfPredEm = "Cannot detect face"
                     gDfPredEmPct = 0.0
@@ -223,13 +209,13 @@ def update_image():
                     handsInTopFace = gHandsPoints[2] and gHandsPoints[3]
 
                     if gOfDomEm == "Fear" or "Surprise":
-                        gFearOrSur = True
+                        fearOrSur = True
 
                     if gOfDomEm != "Low confidence":
                         if handsInTopFace:
                             emotionDict["Surprise"] += 100.0
                         if handInBotFace:
-                            if gFearOrSur:
+                            if fearOrSur:
                                 emotionDict["Surprise"] += 100.0
                                 emotionDict["Fear"] += 100.0
                             else:
@@ -241,7 +227,7 @@ def update_image():
                     gFinalEmotion = max(emotionDict, key = emotionDict.get)
                     
                 
-                    if handInChest and gFearOrSur:
+                    if handInChest and fearOrSur:
                         emotionDict["Fear"] += 200.0
                     
                     gFinalEmotion = max(emotionDict, key = emotionDict.get)
@@ -266,7 +252,6 @@ def update_image():
              frame = openPose.DrawSkeleton(frame, points)
             frame, gHandsPoints = openPose.handsPos(frame, points, button6State)
     
-            #frame = displayTableOnFrame(frame, gDfPredEm, gOfDomEm, gFrameCount)
             if gFrameCount % skippedFrames == 0:
                 end = time.time()
                 procTime = end - start
@@ -285,7 +270,7 @@ def update_image():
                     img = ImageTk.PhotoImage(Image.fromarray(frameFinal))
                     webcamCanvas.create_image(0, 0, anchor=tk.NW, image=img)
 
-                    #create table canvas
+                    #create table canvas 
                     if button2State:
                         guiTable = cv2.cvtColor(guiTable, cv2.COLOR_BGR2RGB)  
                     else:
@@ -322,21 +307,14 @@ def update_image():
         else:
             print("Frame not recieved")
             break
-
-        
+    
         testEnd = time.time()
         #print(testEnd - testStart)
-    
-        
 
         #Get key, if ESC, then end loop
         c = cv2.waitKey(1)
         if c == 27:
             break
-       
-        
-
-
 
 # Create the tkinter window and canvas
 root = gui.tkInit()
