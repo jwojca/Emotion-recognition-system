@@ -7,15 +7,12 @@ from PIL import Image, ImageTk
 # Define global variables
 startButt = False
 button2State = False
-button3_state = False
+button3State = False
 button4State = False
 button5State = False
 button6State = False
 gWebcamCanvasShape = (640, 420)
 gTableCanvasShape = (500, 500)
-
-
-
 
 
 # Define functions for button actions
@@ -41,54 +38,55 @@ def butt2Cmd():
     
 
 def butt3Cmd():
-    global button3_state
-    button3_state = not button3_state
-    gOfWindow = win32gui.FindWindow(None, "tracking result")
+    global button3State
+    button3State = not button3State
+    window = findWindow("tracking result")
 
-    if button3_state:
-        win32gui.ShowWindow(gOfWindow, win32con.SW_SHOWNORMAL)
-        left, top, right, bottom = win32gui.GetWindowRect(gOfWindow)
-        width, height = right - left, bottom - top
-        print(width, height)
-        height = 420
-        width = 640
-        style = win32gui.GetWindowLong(gOfWindow, win32con.GWL_STYLE)
-        # Modify the window style to remove the title bar
-        style &= ~win32con.WS_CAPTION
-        # Set the new window style
-        win32gui.SetWindowLong(gOfWindow, win32con.GWL_STYLE, style)
-        win32gui.MoveWindow(gOfWindow, 850, 35, width, height, True)
-        win32gui.SetWindowPos(gOfWindow, win32con.HWND_TOPMOST, 0, 0 ,0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
-        button3["text"] = "Turn off"
-    else:
-        win32gui.ShowWindow(gOfWindow, win32con.SW_MINIMIZE)
-        button3["text"] = "Turn on"
-    print(f"Button 3 state: {button3_state}")
+    if window:
+        if button3State:
+            win32gui.ShowWindow(window, win32con.SW_SHOWNORMAL)
+            left, top, right, bottom = win32gui.GetWindowRect(window)
+            width, height = right - left, bottom - top
+            print(width, height)
+            height = 420
+            width = 640
+            style = win32gui.GetWindowLong(window, win32con.GWL_STYLE)
+            # Modify the window style to remove the title bar
+            style &= ~win32con.WS_CAPTION
+            # Set the new window style
+            win32gui.SetWindowLong(window, win32con.GWL_STYLE, style)
+            win32gui.MoveWindow(window, 850, 35, width, height, True)
+            win32gui.SetWindowPos(window, win32con.HWND_TOPMOST, 0, 0 ,0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+            button3["text"] = "Turn off"
+        else:
+            win32gui.ShowWindow(window, win32con.SW_MINIMIZE)
+            button3["text"] = "Turn on"
+    print(f"Button 3 state: {button3State}")
 
 def butt4Cmd():
     global button4State
     button4State = not button4State
-    gAusWindow = win32gui.FindWindow(None, "action units")
-    if button4State:
-        win32gui.ShowWindow(gAusWindow, win32con.SW_SHOWNORMAL)
-        left, top, right, bottom = win32gui.GetWindowRect(gAusWindow)
-        width, height = right - left, bottom - top
-        print(width, height)
-        width = 540
-        height = 370
-        style = win32gui.GetWindowLong(gAusWindow, win32con.GWL_STYLE)
-        # Modify the window style to remove the title bar
-        style &= ~win32con.WS_CAPTION
-        # Set the new window style
-        win32gui.SetWindowLong(gAusWindow, win32con.GWL_STYLE, style)
-        win32gui.MoveWindow(gAusWindow, 850, 450, width, height, True)
-        #win32gui.SetWindowPos(gAusWindow, None, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOZORDER | win32con.SWP_FRAMECHANGED)
-        win32gui.SetWindowPos(gAusWindow, win32con.HWND_TOPMOST, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
-        button4["text"] = "Turn off"
-    else:
-        win32gui.ShowWindow(gAusWindow, win32con.SW_MINIMIZE)
-        button4["text"] = "Turn on"
-    print(f"Button 4 state: {button4}")
+    window = findWindow("action units")
+    if window:
+        if button4State:
+            win32gui.ShowWindow(window, win32con.SW_SHOWNORMAL)
+            left, top, right, bottom = win32gui.GetWindowRect(window)
+            width, height = right - left, bottom - top
+            print(width, height)
+            width = 540
+            height = 370
+            style = win32gui.GetWindowLong(window, win32con.GWL_STYLE)
+            # Modify the window style to remove the title bar
+            style &= ~win32con.WS_CAPTION
+            # Set the new window style
+            win32gui.SetWindowLong(window, win32con.GWL_STYLE, style)
+            win32gui.MoveWindow(window, 850, 450, width, height, True)
+            win32gui.SetWindowPos(window, win32con.HWND_TOPMOST, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+            button4["text"] = "Turn off"
+        else:
+            win32gui.ShowWindow(window, win32con.SW_MINIMIZE)
+            button4["text"] = "Turn on"
+    print(f"Button 4 state: {button4State}")
 
 def butt5Cmd():
     global button5State
@@ -97,7 +95,7 @@ def butt5Cmd():
         button5["text"] = "Turn off"
     else:
         button5["text"] = "Turn on"
-    print(f"Button 5 state: {button5}")
+    print(f"Button 5 state: {button5State}")
 
 def butt6Cmd():
     global button6State
@@ -106,24 +104,16 @@ def butt6Cmd():
         button6["text"] = "Turn off"
     else:
         button6["text"] = "Turn on"
-    print(f"Button 6 state: {button6}")
+    print(f"Button 6 state: {button6State}")
 
-def findWindows():
-    global gOfWindow,gAusWindow
-    gOfWindow = win32gui.FindWindow(None, "tracking result")
+def findWindow(windowName):
+    window = win32gui.FindWindow(None, windowName)
     # Check if the window was found
-    if gOfWindow != 0:
-        print("Window found with handle", gOfWindow)
+    if window != 0:
+        print("Window found with handle", window)
     else:
         print("Window not found")
-
-    gAusWindow = win32gui.FindWindow(None, "action units")
-    # Check if the window was found
-    if gAusWindow != 0:
-        print("Window found with handle", gAusWindow)
-    else:
-        print("Window not found")
-
+    return window
 
 def tkInit():
     global root, tableCanvas, webcamCanvas

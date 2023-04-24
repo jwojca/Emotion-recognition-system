@@ -1,38 +1,11 @@
-import subprocess
-import pandas as pd
 import time
-
-import os
 import cv2  
 from deepface import DeepFace
 import numpy as np
-import math
-import argparse
-import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse
-
-import numpy as np
-from sklearn.metrics import confusion_matrix
-from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import classification_report
-
-from sklearn.datasets import load_iris
-from sklearn import tree
-from sklearn.tree import plot_tree
-
-import matplotlib.pyplot as plt
-from sklearn.inspection import DecisionBoundaryDisplay
-from collections import Counter
-
 import openPose
 import openFace
 import decTree
 import gui
-
-import win32gui
-import win32con
 
 import tkinter as tk
 from PIL import Image, ImageTk
@@ -40,8 +13,6 @@ from PIL import Image, ImageTk
 # Define global variables
 startButt = gui.startButt
 button2State = gui.button2State
-button3_state = gui.button3_state
-button4State = gui.button4State
 button5State = gui.button5State
 button6State = gui.button6State
 
@@ -87,24 +58,11 @@ gFinalEmotion = "None"
 testStart = 0
 testEnd = 0
 
-gWebcamCanvasShape = (640, 420)
-gTableCanvasShape = (500, 500)
+gWebcamCanvasShape = gui.gWebcamCanvasShape
 
 
 process = openFace.featuresExtractionWebcam()
 csvFilePath = openFace.checkCSV()
-
-# Create a window of size 1920x1080 with color (240, 240, 240)
-windowHeight, windowWidth = 1080, 1920
-mainWindow = np.zeros((windowHeight, windowWidth, 3), np.uint8)
-mainWindow.fill(240)
-
-global tableCanvas, webcamCanvas
-
-
-
-#TODO as functions
-
 
 
 
@@ -190,7 +148,7 @@ def displayTableInWindow(deepfaceOutput, openfaceOutput, finalEmotion, numFrames
 
 # Define function to update the image in the GUI
 def update_image():
-    global img, webcamCanvas, gWebcamCanvasShape, gTableCanvasShape
+    global img, webcamCanvas, gWebcamCanvasShape
     global gLastPosCsv
     global gSkipCsvHead
     global gHandsPoints
@@ -209,10 +167,9 @@ def update_image():
     global start
     global net
     global cap
-    global mainWindow
-    global gOfWindow,gAusWindow
     global testStart, testEnd
     global stripe
+    global tableCanvas, webcamCanvas
 
     start = time.time()
         
@@ -231,8 +188,6 @@ def update_image():
 
         startButt = gui.startButt
         button2State = gui.button2State
-        button3_state = gui.button3_state
-        button4State = gui.button4State
         button5State = gui.button5State
         button6State = gui.button6State
 
@@ -298,7 +253,6 @@ def update_image():
                     gFinalEmotion = max(emotionDict, key = emotionDict.get)
             
             testStart = time.time()
-            frameCopy = np.copy(frame)
 
             # input image dimensions for the network
             inWidth = 256
@@ -319,23 +273,10 @@ def update_image():
                 gFPS = round(skippedFrames/procTime)
                 start = end
 
-            guiTable = displayTableInWindow(gDfOutput, gOfOutput, gFinalEmotion, gFrameCount, gHandsPoints)
-            #frame = cv2.rectangle(frame, (0, 0), (640, 60), (0, 0, 0), -1)
-            #frame = cv2.putText(frame, "FPS: " + str(gFPS), (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-            #frame = cv2.putText(frame, str(gFinalEmotion), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-
-
-            
+            guiTable = displayTableInWindow(gDfOutput, gOfOutput, gFinalEmotion, gFrameCount, gHandsPoints)           
             stripe = cv2.putText(stripe, "FPS: " + str(gFPS), (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
             stripe = cv2.putText(stripe, str(gFinalEmotion), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
             
-
-            #mainWindow = drawFrameOnWindow(mainWindow,frame, (0, 0))
-            #mainWindow = drawFrameOnWindow(mainWindow, guiTable, (1000, 0))
-            #cv2.putText(tableImage, table[i][j], (x + 5, y + 20), font, fontScale, (255, 255, 255), 1)
-            
-            #cv2.imshow('Output-Skeleton', mainWindow)
-
             try:
                 frameFinal = np.concatenate((stripe, frame), axis = 0)
                 if root.winfo_exists() and webcamCanvas.winfo_exists():
@@ -354,10 +295,6 @@ def update_image():
                      
                     tableImg = ImageTk.PhotoImage(Image.fromarray(guiTable))
                     tableCanvas.create_image(0, 0, anchor=tk.NW, image=tableImg, tags = 'tableImg')
-
-                
-                    #if not button2State and state != 'hidden':     
-                    #    tableCanvas.itemconfig('tableImg', state = 'hidden')  
                                               
                     root.update()
                     
@@ -406,9 +343,6 @@ root = gui.tkInit()
 #root = gui.root
 tableCanvas = gui.tableCanvas
 webcamCanvas = gui.webcamCanvas
-
-
-
 
 # Start the GUI loop and update the image
 update_image()
