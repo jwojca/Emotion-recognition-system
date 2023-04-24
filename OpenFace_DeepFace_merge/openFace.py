@@ -92,10 +92,10 @@ def predict(csvFilePath, clf_entropy, lastPosition, gSkipHeader):
                 conf = []
 
                 if gSkipHeader:
-                    aus = ofData.values[1:rows, 5:cols-1]
+                    aus = ofData.values[1:rows, 5:cols]
                     conf = ofData.values[1:rows, 3]
                 else:
-                    aus = ofData.values[:, 5:cols-1]
+                    aus = ofData.values[:, 5:cols]
                     conf = ofData.values[:, 3]
                 
                 conf = np.array(conf, dtype=np.float)

@@ -45,9 +45,10 @@ def butt3Cmd():
     if window:
         if button3State:
             win32gui.ShowWindow(window, win32con.SW_SHOWNORMAL)
-            left, top, right, bottom = win32gui.GetWindowRect(window)
-            width, height = right - left, bottom - top
-            print(width, height)
+            #left, top, right, bottom = win32gui.GetWindowRect(window)
+            #width, height = right - left, bottom - top
+            #print(width, height)
+            position = (800, 35)
             height = 420
             width = 640
             style = win32gui.GetWindowLong(window, win32con.GWL_STYLE)
@@ -55,7 +56,7 @@ def butt3Cmd():
             style &= ~win32con.WS_CAPTION
             # Set the new window style
             win32gui.SetWindowLong(window, win32con.GWL_STYLE, style)
-            win32gui.MoveWindow(window, 850, 35, width, height, True)
+            win32gui.MoveWindow(window, position[0], position[1], width, height, True)
             win32gui.SetWindowPos(window, win32con.HWND_TOPMOST, 0, 0 ,0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
             button3["text"] = "Turn off"
         else:
@@ -73,14 +74,15 @@ def butt4Cmd():
             left, top, right, bottom = win32gui.GetWindowRect(window)
             width, height = right - left, bottom - top
             print(width, height)
-            width = 540
+            position = (800, 455)
+            width = 585
             height = 370
             style = win32gui.GetWindowLong(window, win32con.GWL_STYLE)
             # Modify the window style to remove the title bar
             style &= ~win32con.WS_CAPTION
             # Set the new window style
             win32gui.SetWindowLong(window, win32con.GWL_STYLE, style)
-            win32gui.MoveWindow(window, 850, 450, width, height, True)
+            win32gui.MoveWindow(window, position[0], position[1], width, height, True)
             win32gui.SetWindowPos(window, win32con.HWND_TOPMOST, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
             button4["text"] = "Turn off"
         else:
@@ -123,7 +125,7 @@ def tkInit():
     root.geometry("1920x1080")
     root.state("zoomed")
     root.title('Emotion Recognition System')
-    webcamPos = (10, 10)
+    webcamPos = (90, 10)
 
     buttPosOrig = (180, 10)
     buttYOffset = 40
@@ -136,11 +138,11 @@ def tkInit():
 
     rectWidth = 250
     rectHeight = 350
-    rectPos = (10, 450)
-    rectBorder = 1
+    rectPos = (40, 450)
+    rectBorder = 0
     rectCanvas = tk.Canvas(root, width = rectWidth + 1, height = rectHeight + 1)
     rectCanvas.create_rectangle(rectBorder + 1, rectBorder + 1, rectWidth, rectHeight, width = rectBorder)
-    rectCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1], text = "Text text", fill="black", anchor=tk.NW)
+    rectCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1], text = "Start button", fill="black", anchor=tk.NW)
     rectCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + buttYOffset, text = "Table", fill="black",anchor=tk.NW)
     rectCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + 2 * buttYOffset, text = "OpenFace webcam", fill="black", anchor=tk.NW)
     rectCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + 3 * buttYOffset, text = "Action units", fill="black", anchor=tk.NW)
@@ -149,7 +151,7 @@ def tkInit():
     rectCanvas.place(x = rectPos[0], y = rectPos[1])
 
     tableCanvas = tk.Canvas(root, width=gTableCanvasShape[0], height=gTableCanvasShape[1])
-    tableCanvas.place(x = 300, y = 450)
+    tableCanvas.place(x = 316, y = 450)
 
 
     # Create the buttons

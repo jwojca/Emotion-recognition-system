@@ -1,11 +1,13 @@
 import pandas as pd
+import os
 from sklearn.metrics import confusion_matrix
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 
-trainCSV = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\trainAUcAUr.csv'
-testCSV =  r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\testAUcAUr.csv'
+
+#trainCSV = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\trainAUcAUr.csv'
+#testCSV =  r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\testAUcAUr.csv'
 
 classList = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
 
@@ -19,8 +21,16 @@ featureList = ['AU01_r', 'AU02_r', 'AU04_r', 'AU05_r', 'AU06_r', 'AU07_r', 'AU09
 #Decision tree
 # Function importing Dataset
 def importdata():
-	trainData = pd.read_csv(trainCSV, sep= ';', header=None)
-	testData = pd.read_csv(testCSV, sep= ';', header=None)
+	filePath = os.path.dirname(__file__)
+	trainCSV = os.path.join(filePath, r'csv\trainAUcAUr.csv')
+	testCSV = os.path.join(filePath, r'csv\testAUcAUr.csv')
+	print(trainCSV)
+	try:
+		trainData = pd.read_csv(trainCSV, sep= ';', header=None)
+		testData = pd.read_csv(testCSV, sep= ';', header=None)
+	except:
+		print("bad path")
+	
 	
 	# Printing the dataset obseravtions
 	#print ("Dataset: ", trainData.head())
@@ -30,13 +40,14 @@ def importdata():
 
 # Function to load the dataset
 def loaddataset(trainData, testData):
+	rows, cols = trainData.shape
 
 	# Separating the target variable
-	X_train = trainData.values[1:len(trainData), 1:35]
-	y_train = trainData.values[1:len(trainData):, 36]
+	X_train = trainData.values[1:rows, 5:cols-1]
+	y_train = trainData.values[1:rows:, cols-1]
 
-	X_test = testData.values[1:len(testData), 1:35]
-	y_test = testData.values[1:len(testData):, 36]
+	X_test = testData.values[1:rows, 5:cols-1]
+	y_test = testData.values[1:rows:, cols-1]
 	
 	return X_train, X_test, y_train, y_test
 		
