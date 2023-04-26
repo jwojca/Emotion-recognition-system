@@ -18,11 +18,11 @@ featureList = ['AU01_r', 'AU02_r', 'AU04_r', 'AU05_r', 'AU06_r', 'AU07_r', 'AU09
  			   'AU10_c', 'AU12_c', 'AU14_c', 'AU15_c', 'AU17_c', 'AU20_c', 'AU23_c',
  			   'AU25_c', 'AU26_c', 'AU28_c', 'AU45_c']
 
-#Decision tree
 # Function importing Dataset
 def importdata():
 	filePath = os.path.dirname(__file__)
-	trainCSV = os.path.join(filePath, r'csv\trainAUcAUr.csv')
+	#trainCSV = os.path.join(filePath, r'csv\trainAUcAUr.csv')
+	trainCSV = os.path.join(filePath, r'csv\trainAUcAUrCustom2.csv')
 	testCSV = os.path.join(filePath, r'csv\testAUcAUr.csv')
 	print(trainCSV)
 	try:

@@ -2,6 +2,8 @@ import win32gui
 import win32con
 
 import tkinter as tk
+from tkinter import *
+from tkinter import ttk
 from PIL import Image, ImageTk
 
 # Define global variables
@@ -11,8 +13,19 @@ button3State = False
 button4State = False
 button5State = False
 button6State = False
+button7State = False
 gWebcamCanvasShape = (640, 420)
 gTableCanvasShape = (500, 500)
+
+OPTIONS = [
+"Angry",
+"Happy",
+"Sad",
+"Surprise",
+"Neutral",
+"Disgust",
+"Fear"
+] 
 
 
 # Define functions for button actions
@@ -108,6 +121,18 @@ def butt6Cmd():
         button6["text"] = "Turn on"
     print(f"Button 6 state: {button6State}")
 
+def butt7Cmd(rectCanvas, rectPos):
+    global button7State
+    button7State = not button7State
+    if button7State:
+        button7["text"] = "Turn off"
+        rectCanvas.place_forget()
+    else:
+        rectCanvas.config(state='normal')
+        button7["text"] = "Turn on"
+        rectCanvas.place(x = rectPos[0], y = rectPos[1])
+    print(f"Button 7 state: {button7State}")
+
 def findWindow(windowName):
     window = win32gui.FindWindow(None, windowName)
     # Check if the window was found
@@ -118,8 +143,8 @@ def findWindow(windowName):
     return window
 
 def tkInit():
-    global root, tableCanvas, webcamCanvas
-    global button1, button2, button3, button4, button5, button6
+    global root, tableCanvas, webcamCanvas, rectCanvas
+    global button1, button2, button3, button4, button5, button6, button7
 
     root = tk.Tk()
     root.geometry("1920x1080")
@@ -178,4 +203,14 @@ def tkInit():
     button6Pos = (buttPosOrig[0], buttPosOrig[1] + 5*buttYOffset)
     button6 = tk.Button(rectCanvas, text="Turn on", command=butt6Cmd)
     button6.place(x = button6Pos[0], y = button6Pos[1])
+
+    button7Pos = (buttPosOrig[0], buttPosOrig[1] + 6*buttYOffset)
+    button7 = ttk.Button(root, text="Turn on", command= lambda: butt7Cmd(rectCanvas, rectPos))
+    button7.place(x = button7Pos[0], y = button7Pos[1])
+
+    emOption = StringVar(root)
+    emOption.set(OPTIONS[0])
+    dropDown = OptionMenu(root, emOption, *OPTIONS)
+    dropDown.pack()
+
     return root
