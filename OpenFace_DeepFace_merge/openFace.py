@@ -122,7 +122,8 @@ def predict(csvFilePath, clf_entropy, lastPosition, gSkipHeader):
 
     return (ofDominantEm, dominantEmPct, lastPosition)
 
-def writeToCustomCSV(csvReadPath):
+def writeToCustomCSV(csvReadPath, emotion):
+   
     # Get the current size of the file
     lastPosition = os.path.getsize(csvReadPath)
     numOfSamples = 200
@@ -144,20 +145,73 @@ def writeToCustomCSV(csvReadPath):
 
                     # Process the new data in the file
                     for row in reader:
+                        #append selected emotion to csv file
+                        row.append(emotion)
                         ofDataArr.append(row)
                         writtenSamples += 1
+                        if writtenSamples >= numOfSamples:
+                            break
+                       
                     lastPosition = currentSize
 
         except FileNotFoundError:
             print("CSV file doesnt exist!")
-        if writtenSamples >= 200:
+
+        if writtenSamples >= numOfSamples:
+            with open(customCsvPath, 'r', newline='') as writeFile:
+                reader = csv.reader(writeFile)
+                position = getCsvPos(numOfSamples, emotion)
+                prevData = list(reader)
+
             with open(customCsvPath, 'w', newline='') as writeFile:
                 writer = csv.writer(writeFile)
+                writer.writerows(prevData[:position])
                 for row in ofDataArr:
                     writer.writerow(row)
+                writer.writerows(prevData[position + numOfSamples:])
+            print("Saved to custom CSV")
             break
 
-    print("Saved to custom CSV")
+   
+def getCsvPos(numOfSamples, emotionStr):
+
+    """ 
+          0        : Header
+          1 -  200 : Angry
+        201 -  400 : Disgust
+        401 -  600 : Fear
+        601 -  800 : Happy
+        801 - 1000 : Neutral
+       1001 - 1200 : Sad
+       1201 - 1400 : Surprise
+    """ 
+    
+    if emotionStr == "Angry":
+        position = 0 * numOfSamples
+    elif emotionStr == "Disgust":
+        position = 1 * numOfSamples
+    elif emotionStr == "Fear":
+        position = 2 * numOfSamples
+    elif emotionStr == "Happy":
+        position = 3 * numOfSamples
+    elif emotionStr == "Neutral":
+        position = 4 * numOfSamples
+    elif emotionStr == "Sad":
+        position = 5 * numOfSamples
+    elif emotionStr == "Surprise":
+        position = 6 * numOfSamples
+    else:
+        print("Wrong emotion string argument")
+    
+    #Adding the header
+    position += 1 
+    return position
+    
+
+    
+    
+
+    
 
 
 def destroyProcess(process):

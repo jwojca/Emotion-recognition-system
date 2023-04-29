@@ -157,9 +157,10 @@ def butt7Cmd(analyzeCanvas, trainCanvas, rectPos, headerCanvas):
         headerCanvas.itemconfig(modeTxtId, text = "Analyze mode")
     print(f"Button 7 state: {button7State}")
 
-def butt8Cmd():
+def butt8Cmd(emOption):
     csvFilePath = openFace.checkCSV()
-    openFace.writeToCustomCSV(csvFilePath)
+    selectedEmotion = emOption.get()
+    openFace.writeToCustomCSV(csvFilePath, selectedEmotion)
 
 def findWindow(windowName):
     window = win32gui.FindWindow(None, windowName)
@@ -267,7 +268,7 @@ def tkInit():
     dropDown.place(x = buttPosOrig[0], y = buttPosOrig[1] - 3)
 
     button8Pos = (buttPosOrig[0], buttPosOrig[1] + buttYOffset)
-    button8 = tk.Button(trainCanvas, text="Start", command=butt8Cmd)
+    button8 = tk.Button(trainCanvas, text="Start", command= lambda: butt8Cmd(emOption))
     button8.place(x = button8Pos[0], y = button8Pos[1])
 
     return root

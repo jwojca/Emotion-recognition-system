@@ -182,7 +182,6 @@ def update_image():
         button2State = gui.button2State
         button5State = gui.button5State
         button6State = gui.button6State
-        startTrain = gui.button8State
 
         fearOrSur = False
 
