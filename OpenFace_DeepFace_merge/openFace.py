@@ -12,6 +12,9 @@ exePath  = r"C:\Users\hwojc\Desktop\Diplomka\Open Face\OpenFace_2.2.0_win_x64\Fe
 #args = ["-device", "2", "-cam_width", "640", "-cam_height", "480", "-vis-aus", "-aus", "-out_dir", outDir]
 args = ["-device", "2", "-cam_width", "640", "-cam_height", "480", "-vis-aus", "-aus", "-out_dir", "-mloc", "model/main_clnf_general.txt", outDir]
 
+filePath = os.path.dirname(__file__)
+customCsvPath = os.path.join(filePath, r'csv\custom\custom.csv')
+
 def deleteFolderContents(folder_path):
     """
     Deletes all files and subdirectories inside a folder, but not the folder itself.
@@ -118,6 +121,44 @@ def predict(csvFilePath, clf_entropy, lastPosition, gSkipHeader):
         print("CSV file doesnt exist!")
 
     return (ofDominantEm, dominantEmPct, lastPosition)
+
+def writeToCustomCSV(csvReadPath):
+    # Get the current size of the file
+    lastPosition = os.path.getsize(csvReadPath)
+    numOfSamples = 200
+    writtenSamples = 0
+    ofDataArr = []
+
+    while True:
+        time.sleep(0.3)
+        try:
+            currentSize = os.path.getsize(csvReadPath)
+            # Check if the file has grown since we last read it
+            if (currentSize > lastPosition):
+                with open(csvReadPath, 'r') as readFile:
+                    # Move the file pointer to the last position
+                    readFile.seek(lastPosition)
+
+                    # Create a new CSV reader and writer object
+                    reader = csv.reader(readFile)
+
+                    # Process the new data in the file
+                    for row in reader:
+                        ofDataArr.append(row)
+                        writtenSamples += 1
+                    lastPosition = currentSize
+
+        except FileNotFoundError:
+            print("CSV file doesnt exist!")
+        if writtenSamples >= 200:
+            with open(customCsvPath, 'w', newline='') as writeFile:
+                writer = csv.writer(writeFile)
+                for row in ofDataArr:
+                    writer.writerow(row)
+            break
+
+    print("Saved to custom CSV")
+
 
 def destroyProcess(process):
     process.terminate()

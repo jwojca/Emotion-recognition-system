@@ -4,7 +4,10 @@ import win32con
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
+import os
+import openFace
 from PIL import Image, ImageTk
+
 
 # Define global variables
 startButt = False
@@ -14,6 +17,7 @@ button4State = False
 button5State = False
 button6State = False
 button7State = False
+button8State = False
 gWebcamCanvasShape = (640, 420)
 gTableCanvasShape = (500, 500)
 
@@ -121,7 +125,7 @@ def butt6Cmd():
         button6["text"] = "Turn on"
     print(f"Button 6 state: {button6State}")
 
-def butt7Cmd(analyzeCanvas, trainCanvas, rectPos):
+def butt7Cmd(analyzeCanvas, trainCanvas, rectPos, headerCanvas):
     global button7State
     button7State = not button7State
     window1 = findWindow("tracking result")
@@ -140,6 +144,8 @@ def butt7Cmd(analyzeCanvas, trainCanvas, rectPos):
         trainCanvas.place(x = rectPos[0], y = rectPos[1])
         showWindow(window1, position1, width1, height1)
         showWindow(window2, position2, width2, height2)
+        headerCanvas.itemconfig(modeTxtId, text = "Train mode")
+
        
     else:
         analyzeCanvas.config(state='normal')
@@ -148,16 +154,12 @@ def butt7Cmd(analyzeCanvas, trainCanvas, rectPos):
         trainCanvas.place_forget()
         hideWindow(window1)
         hideWindow(window2)
+        headerCanvas.itemconfig(modeTxtId, text = "Analyze mode")
     print(f"Button 7 state: {button7State}")
 
 def butt8Cmd():
-    global button8State
-    button8State = not button8State
-    if button8State:
-        button8["text"] = "Stop"
-    else:
-        button8["text"] = "Start"
-    print(f"Button 8 state: {button8State}")
+    csvFilePath = openFace.checkCSV()
+    openFace.writeToCustomCSV(csvFilePath)
 
 def findWindow(windowName):
     window = win32gui.FindWindow(None, windowName)
@@ -182,6 +184,7 @@ def hideWindow(window):
 def tkInit():
     global root, tableCanvas, webcamCanvas, analyzeCanvas
     global button1, button2, button3, button4, button5, button6, button7, button8
+    global modeTxtId
 
     buttPosOrig = (130, 7)
     buttYOffset = 40
@@ -193,13 +196,18 @@ def tkInit():
     root.state("zoomed")
     root.title('Emotion Recognition System')  
     
-
+    #Webcam canvas
     webcamCanvas = tk.Canvas(root, width=gWebcamCanvasShape[0], height=gWebcamCanvasShape[1])
     webcamCanvas.place(x = webcamPos[0], y = webcamPos[1])
 
+    #Table canvas
+    tableCanvas = tk.Canvas(root, width=gTableCanvasShape[0], height=gTableCanvasShape[1])
+    tableCanvas.place(x = 316, y = 450)
+    
+    #Analyze canvas
     rectWidth = 200
     rectHeight = 350
-    rectPos = (85, 510)
+    rectPos = (85, 520)
     rectBorder = 0
     analyzeCanvas = tk.Canvas(root, width = rectWidth + 1, height = rectHeight + 1)
     analyzeCanvas.create_rectangle(rectBorder + 1, rectBorder + 1, rectWidth, rectHeight, width = rectBorder)
@@ -211,22 +219,6 @@ def tkInit():
     analyzeCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + 5 * buttYOffset, text = "Face areas", fill="black", anchor=tk.NW)
     analyzeCanvas.place(x = rectPos[0], y = rectPos[1])
 
-    trainCanvas = tk.Canvas(root, width = rectWidth + 1, height = rectHeight + 1)
-    trainCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1], text = "Select emotion", fill="black", anchor=tk.NW)
-    trainCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + buttYOffset, text = "Start learning", fill="black",anchor=tk.NW)
-
-    headerHeight = 60
-    headerPos = (rectPos[0], 440)
-    headerCanvas = tk.Canvas(root, width=rectWidth, height= headerHeight)
-    headerCanvas.place(x = headerPos[0], y = headerPos[1])
-    headerCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1], text = "Change mode", font=('freemono', 10,'bold'), fill="black", anchor=tk.NW)
-
-    tableCanvas = tk.Canvas(root, width=gTableCanvasShape[0], height=gTableCanvasShape[1])
-    tableCanvas.place(x = 316, y = 450)
-    
-
-
-    # Create the buttons
     button1Pos = (buttPosOrig[0], buttPosOrig[1])
     button1 = tk.Button(analyzeCanvas, text= "Start" , command = butt1Cmd)
     button1.place(x = button1Pos[0], y = button1Pos[1])
@@ -253,11 +245,22 @@ def tkInit():
 
 
     #Header canvas
+    headerHeight = 80
+    headerPos = (rectPos[0], 440)
+    headerCanvas = tk.Canvas(root, width=rectWidth, height= headerHeight)
+    headerCanvas.place(x = headerPos[0], y = headerPos[1])
+    headerCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1], text = "Change mode", fill="black", anchor=tk.NW)
+    modeTxtId = headerCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + buttYOffset, text = "Analyze mode", font=('freemono', 11,'bold'), fill="black", anchor=tk.NW)
+
     button7Pos = (buttPosOrig[0], buttPosOrig[1])
-    button7 = tk.Button(headerCanvas, text="To train", command= lambda: butt7Cmd(analyzeCanvas, trainCanvas, rectPos))
+    button7 = tk.Button(headerCanvas, text="To train", command= lambda: butt7Cmd(analyzeCanvas, trainCanvas, rectPos, headerCanvas))
     button7.place(x = button7Pos[0], y = button7Pos[1])
 
-    #Train
+    #Train canvas
+    trainCanvas = tk.Canvas(root, width = rectWidth + 1, height = rectHeight + 1)
+    trainCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1], text = "Select emotion", fill="black", anchor=tk.NW)
+    trainCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + buttYOffset, text = "Start learning", fill="black",anchor=tk.NW)
+
     emOption = StringVar(trainCanvas)
     emOption.set(OPTIONS[0])
     dropDown = OptionMenu(trainCanvas, emOption, *OPTIONS)

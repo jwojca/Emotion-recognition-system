@@ -7,6 +7,7 @@ import openFace
 import decTree
 import gui
 
+
 import tkinter as tk
 from PIL import Image, ImageTk
 
@@ -47,6 +48,7 @@ gDfPredEm = "None"
 gOfDomEm = "None"
 gOfDomEmPct = 0.0
 gFPS = 0
+gGetCurrPos = True
 
 
 gFinalEmotion = "None"
@@ -59,6 +61,8 @@ gWebcamCanvasShape = gui.gWebcamCanvasShape
 
 process = openFace.featuresExtractionWebcam()
 csvFilePath = openFace.checkCSV()
+
+
 
 
 def drawFrameOnWindow(windowImage, frame, topLeft):
@@ -157,6 +161,7 @@ def update_image():
     global testStart, testEnd
     global stripe
     global tableCanvas, webcamCanvas
+    
 
     start = time.time()
         
@@ -177,6 +182,7 @@ def update_image():
         button2State = gui.button2State
         button5State = gui.button5State
         button6State = gui.button6State
+        startTrain = gui.button8State
 
         fearOrSur = False
 
@@ -292,6 +298,7 @@ def update_image():
             frameFinal = np.concatenate((stripe, frame), axis = 0)
             #print(frameFinal.shape)
 
+            
             print("Waiting for start...")
             time.sleep(0.1)
             try:
