@@ -157,18 +157,22 @@ def writeToCustomCSV(csvReadPath, emotion):
         except FileNotFoundError:
             print("CSV file doesnt exist!")
 
+        prevData = []
         if writtenSamples >= numOfSamples:
-            with open(customCsvPath, 'r', newline='') as writeFile:
+            with open(customCsvPath, 'r') as writeFile:
                 reader = csv.reader(writeFile)
                 position = getCsvPos(numOfSamples, emotion)
-                prevData = list(reader)
+                for row in reader:
+                    prevData.append(row)
 
             with open(customCsvPath, 'w', newline='') as writeFile:
-                writer = csv.writer(writeFile)
-                writer.writerows(prevData[:position])
+                writer = csv.writer(writeFile, delimiter = ',')
+                for row in prevData[:position]:
+                    writer.writerow(row)
                 for row in ofDataArr:
                     writer.writerow(row)
-                writer.writerows(prevData[position + numOfSamples:])
+                for row in prevData[position + numOfSamples:]:
+                    writer.writerow(row)
             print("Saved to custom CSV")
             break
 

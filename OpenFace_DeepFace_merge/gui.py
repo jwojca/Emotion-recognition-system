@@ -161,6 +161,10 @@ def butt8Cmd(emOption):
     csvFilePath = openFace.checkCSV()
     selectedEmotion = emOption.get()
     openFace.writeToCustomCSV(csvFilePath, selectedEmotion)
+    window1 = findWindow("tracking result")
+    window2 = findWindow("action units")
+    hideWindow(window1)
+    hideWindow(window2)
 
 def findWindow(windowName):
     window = win32gui.FindWindow(None, windowName)
