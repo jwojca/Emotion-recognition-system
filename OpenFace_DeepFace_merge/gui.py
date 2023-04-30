@@ -24,6 +24,8 @@ button9State = False
 gWebcamCanvasShape = (640, 420)
 gTableCanvasShape = (500, 500)
 
+gFirstTimeTrain = True
+
 OPTIONS = [
 "Angry",
 "Happy",
@@ -158,6 +160,12 @@ def butt8Cmd(emOption):
     position2 = (800, 455)
     width2 = 585
     height2 = 370
+
+    #When trained for first time - create folder
+    global gFirstTimeTrain
+    if gFirstTimeTrain:
+        openFace.createCustomCsv()
+        gFirstTimeTrain = False
 
     #Get selected emotion
     selectedEmotion = emOption.get()

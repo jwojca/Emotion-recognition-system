@@ -6,6 +6,8 @@ import csv
 import decTree
 import pandas as pd
 import numpy as np
+import shutil
+from tkinter import filedialog as fd
 
 outDir = r"C:\Users\hwojc\Desktop\Diplomka\Repo\OpenFace_DeepFace_merge\processed"
 exePath  = r"C:\Users\hwojc\Desktop\Diplomka\Open Face\OpenFace_2.2.0_win_x64\FeatureExtraction.exe"
@@ -13,8 +15,11 @@ exePath  = r"C:\Users\hwojc\Desktop\Diplomka\Open Face\OpenFace_2.2.0_win_x64\Fe
 args = ["-device", "2", "-cam_width", "640", "-cam_height", "480", "-vis-aus", "-aus", "-out_dir", "-mloc", "model/main_clnf_general.txt", outDir]
 
 filePath = os.path.dirname(__file__)
-customCsvPath = os.path.join(filePath, r'csv\custom\trainCustom.csv')
+customTrainCsvPath = os.path.join(filePath, r'csv\custom\trainCustom.csv')
 customTestCsvPath = os.path.join(filePath, r'csv\custom\testCustom.csv')
+
+baseTrainCsvPath = os.path.join(filePath, r'csv\base\trainBase.csv')
+baseTestCsvPath = os.path.join(filePath, r'csv\base\testBase.csv')
 
 def deleteFolderContents(folder_path):
     """
@@ -123,6 +128,28 @@ def predict(csvFilePath, clf_entropy, lastPosition, gSkipHeader):
 
     return (ofDominantEm, dominantEmPct, lastPosition)
 
+
+def createCustomCsv():
+
+    #Ask to create new directory
+    initDir = os.path.join(filePath, r'csv')
+    dirPath = fd.askdirectory(title='Create new directorz', initialdir = initDir)
+
+    #Create destination path of csv file
+    newTestCsvPath = os.path.join(dirPath, r'testCustom.csv')
+    newTrainCsvPath = os.path.join(dirPath, r'trainCustom.csv')
+    
+    #Copy files
+    shutil.copy(baseTestCsvPath, newTestCsvPath)
+    shutil.copy(baseTrainCsvPath, newTrainCsvPath)
+
+    #Update path of custom csv files
+    global customTestCsvPath
+    global customTrainCsvPath
+    customTestCsvPath = newTestCsvPath
+    customTrainCsvPath = newTrainCsvPath
+
+
 def writeToCustomCSV(csvReadPath, emotion):
    
     # Get the current size of the file
@@ -168,13 +195,13 @@ def writeToCustomCSV(csvReadPath, emotion):
         prevTestData = []
         if writtenSamples >= numOfSamples:
             #Write to train csv file
-            with open(customCsvPath, 'r') as writeFile:
+            with open(customTrainCsvPath, 'r') as writeFile:
                 reader = csv.reader(writeFile)
                 position = getCsvPos(trainSamples, emotion)
                 for row in reader:
                     prevData.append(row)
 
-            with open(customCsvPath, 'w', newline='') as writeFile:
+            with open(customTrainCsvPath, 'w', newline='') as writeFile:
                 writer = csv.writer(writeFile, delimiter = ',')
                 for row in prevData[:position]:
                     writer.writerow(row)
