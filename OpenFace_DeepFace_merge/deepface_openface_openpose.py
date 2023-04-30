@@ -8,6 +8,7 @@ import decTree
 import gui
 
 
+
 import tkinter as tk
 from PIL import Image, ImageTk
 
@@ -17,12 +18,8 @@ button2State = gui.button2State
 button5State = gui.button5State
 button6State = gui.button6State
 
-#train decision tree
-trainData, testData = decTree.importdata()
-X_train, X_test, y_train, y_test = decTree.loaddataset(trainData, testData)
-clf_entropy = decTree.train_using_entropy(X_train, X_test, y_train, 7, 37)
-y_pred_entropy = decTree.prediction(X_test, clf_entropy)
-acc = decTree.cal_accuracy(y_test, y_pred_entropy)
+#train tree
+trainedTree = decTree.trainTree(False)
 
 #Open Pose
 net = openPose.loadModel()
@@ -49,6 +46,7 @@ gOfDomEm = "None"
 gOfDomEmPct = 0.0
 gFPS = 0
 gGetCurrPos = True
+gRetrainTree = False
 
 
 gFinalEmotion = "None"
@@ -99,9 +97,6 @@ def displayTableInWindow(deepfaceOutput, openfaceOutput, finalEmotion, numFrames
     # Define the size of each cell in the table
     cellSize = (180, 25)
     cellSize2 = (235, 25)
-
-    # Define the circle radius
-    circleRadius = 5
 
     # Calculate the size of the window based on the number of rows in the table
     windowWidth = cellSize[0]  + cellSize2[0]
@@ -161,6 +156,7 @@ def update_image():
     global testStart, testEnd
     global stripe
     global tableCanvas, webcamCanvas
+    global trainedTree, gRetrainTree
     
 
     start = time.time()
@@ -183,12 +179,16 @@ def update_image():
         button5State = gui.button5State
         button6State = gui.button6State
 
+       
+        
+
         fearOrSur = False
 
         frameRecieved, frame = cap.read()
         if frameRecieved and startButt:
             global gFrameCount
             gFrameCount = gFrameCount + 1
+
             if gFrameCount % skippedFrames == 0:
                 try:
                     result = DeepFace.analyze(frame, actions = ['emotion'], enforce_detection= True)
@@ -205,7 +205,7 @@ def update_image():
                     gDfOutput = (gDfPredEm, gDfPredEmPct)
                 
                 try:
-                    gOfDomEm, gOfDomEmPct, gLastPosCsv = openFace.predict(csvFilePath, clf_entropy, gLastPosCsv, gSkipCsvHead)
+                    gOfDomEm, gOfDomEmPct, gLastPosCsv = openFace.predict(csvFilePath, trainedTree, gLastPosCsv, gSkipCsvHead)
                     gOfOutput = (gOfDomEm, gOfDomEmPct)
                     gSkipCsvHead = False
 
@@ -296,8 +296,12 @@ def update_image():
         elif not startButt:
             frameFinal = np.concatenate((stripe, frame), axis = 0)
             #print(frameFinal.shape)
+            gRetrainTree = gui.button9State
 
-            
+            if gRetrainTree:
+                trainedTree = gui.trainedTree
+                gui.button9State = False
+
             print("Waiting for start...")
             time.sleep(0.1)
             try:

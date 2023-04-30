@@ -4,6 +4,10 @@ from sklearn.metrics import confusion_matrix
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
+from sklearn.tree import plot_tree
+import matplotlib.pyplot as plt
+from tkinter import filedialog as fd
+from tkinter import messagebox
 
 
 #trainCSV = r'C:\Users\hwojc\OneDrive - Vysoké učení technické v Brně\Magisterské studium\Diplomka\02 Modely\Validace\OpenFace\rozhodovaci strom\trainAUcAUr.csv'
@@ -20,10 +24,21 @@ featureList = ['AU01_r', 'AU02_r', 'AU04_r', 'AU05_r', 'AU06_r', 'AU07_r', 'AU09
 
 # Function importing Dataset
 def importdata():
-	filePath = os.path.dirname(__file__)
+	#filePath = os.path.dirname(__file__)
 	#trainCSV = os.path.join(filePath, r'csv\trainAUcAUr.csv')
-	trainCSV = os.path.join(filePath, r'csv\custom\custom.csv')
-	testCSV = os.path.join(filePath, r'csv\testAUcAUr.csv')
+	#trainCSV = os.path.join(filePath, r'csv\custom\custom.csv')
+	#testCSV = os.path.join(filePath, r'csv\testAUcAUr.csv')
+	#testCSV = os.path.join(filePath, r'csv\custom\customTest.csv')
+	messagebox.showinfo("Info", "Choose files for training the decision tree.")
+	filePath = os.path.dirname(__file__)
+	csvPath = os.path.join(filePath, r'csv')
+
+	#trainCSV = fd.askopenfilename(title='Open a file', initialdir = csvPath, filetypes= (('csv files', '*.csv'),))
+	#testCSV = fd.askopenfilename(title='Open a file', initialdir = csvPath, filetypes= (('csv files', '*.csv'),))
+
+	testCSV, trainCSV =  fd.askopenfilenames(title='Open a file', initialdir = csvPath, filetypes= (('csv files', '*.csv'),))
+
+
 	print(trainCSV)
 	try:
 		trainData = pd.read_csv(trainCSV, sep= ',', header=None)
@@ -80,3 +95,22 @@ def cal_accuracy(y_test, y_pred):
 	print("Report : \n",classification_report(y_test, y_pred))
 	acc = accuracy_score(y_test,y_pred)*100
 	return acc
+
+def trainTree(plotTree):
+	#TODO replace constants in training process
+
+	#train decision tree
+	trainData, testData = importdata()
+	X_train, X_test, y_train, y_test = loaddataset(trainData, testData)
+	clf_entropy = train_using_entropy(X_train, X_test, y_train, 7, 37)
+
+	y_pred_entropy = prediction(X_test, clf_entropy)
+	acc = cal_accuracy(y_test, y_pred_entropy)
+
+	if plotTree:
+		plt.figure(figsize=(25, 25))
+		plot_tree(clf_entropy, filled=True, class_names=classList, feature_names= featureList)
+		plt.title("Decision tree - entropy")
+		plt.show()
+
+	return clf_entropy

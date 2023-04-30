@@ -7,6 +7,8 @@ from tkinter import ttk
 import os
 import openFace
 from PIL import Image, ImageTk
+from tkinter import messagebox
+import decTree
 
 
 # Define global variables
@@ -18,6 +20,7 @@ button5State = False
 button6State = False
 button7State = False
 button8State = False
+button9State = False
 gWebcamCanvasShape = (640, 420)
 gTableCanvasShape = (500, 500)
 
@@ -40,6 +43,7 @@ def butt1Cmd():
         button1["text"] = "Stop"
     else:
         button1["text"] = "Start"
+        butt2Cmd()
     print(f"Button 1 state: {startButt}")
 
 def butt2Cmd():
@@ -128,6 +132,23 @@ def butt6Cmd():
 def butt7Cmd(analyzeCanvas, trainCanvas, rectPos, headerCanvas):
     global button7State
     button7State = not button7State
+    
+    if button7State:
+        button7["text"] = "To analyze"
+        analyzeCanvas.place_forget()
+        trainCanvas.place(x = rectPos[0], y = rectPos[1])
+        headerCanvas.itemconfig(modeTxtId, text = "Train mode")
+    else:
+        analyzeCanvas.config(state='normal')
+        button7["text"] = "To train"
+        analyzeCanvas.place(x = rectPos[0], y = rectPos[1])
+        trainCanvas.place_forget()
+        headerCanvas.itemconfig(modeTxtId, text = "Analyze mode")
+    print(f"Button 7 state: {button7State}")
+
+def butt8Cmd(emOption):
+
+    #Defining window parameters
     window1 = findWindow("tracking result")
     position1 = (800, 35)
     height1 = 420
@@ -138,33 +159,35 @@ def butt7Cmd(analyzeCanvas, trainCanvas, rectPos, headerCanvas):
     width2 = 585
     height2 = 370
 
-    if button7State:
-        button7["text"] = "To analyze"
-        analyzeCanvas.place_forget()
-        trainCanvas.place(x = rectPos[0], y = rectPos[1])
-        showWindow(window1, position1, width1, height1)
-        showWindow(window2, position2, width2, height2)
-        headerCanvas.itemconfig(modeTxtId, text = "Train mode")
-
-       
-    else:
-        analyzeCanvas.config(state='normal')
-        button7["text"] = "To train"
-        analyzeCanvas.place(x = rectPos[0], y = rectPos[1])
-        trainCanvas.place_forget()
-        hideWindow(window1)
-        hideWindow(window2)
-        headerCanvas.itemconfig(modeTxtId, text = "Analyze mode")
-    print(f"Button 7 state: {button7State}")
-
-def butt8Cmd(emOption):
-    csvFilePath = openFace.checkCSV()
+    #Get selected emotion
     selectedEmotion = emOption.get()
+    
+    #Inform user that the record will start 
+    messagebox.showinfo("Info", "Recording of " + selectedEmotion + " emotion will follow after hitting OK button. \
+    Recording will take approximately 8 seconds. Perform the emotion until the camera output hides.")
+
+    #Show OpenFace output to user
+    showWindow(window1, position1, width1, height1)
+    showWindow(window2, position2, width2, height2)
+
+    #Check if csv exists and write data to custom csv file
+    csvFilePath = openFace.checkCSV()
     openFace.writeToCustomCSV(csvFilePath, selectedEmotion)
-    window1 = findWindow("tracking result")
-    window2 = findWindow("action units")
+    
+    #Hide windows
     hideWindow(window1)
     hideWindow(window2)
+
+    #Inform user that the recording was succesful 
+    messagebox.showinfo("Info", "Succesfully recorded emotion " + selectedEmotion + " . For updating tree use Train button.")
+
+def butt9Cmd():
+    global button9State
+    global trainedTree
+    trainedTree = decTree.trainTree(FALSE)
+    button9State = True
+    messagebox.showinfo("Info", "Decision tree was trained.")
+    print(f"Button 9 state: {button9State}")
 
 def findWindow(windowName):
     window = win32gui.FindWindow(None, windowName)
@@ -188,7 +211,7 @@ def hideWindow(window):
 
 def tkInit():
     global root, tableCanvas, webcamCanvas, analyzeCanvas
-    global button1, button2, button3, button4, button5, button6, button7, button8
+    global button1, button2, button3, button4, button5, button6, button7, button8, button9
     global modeTxtId
 
     buttPosOrig = (130, 7)
@@ -264,7 +287,8 @@ def tkInit():
     #Train canvas
     trainCanvas = tk.Canvas(root, width = rectWidth + 1, height = rectHeight + 1)
     trainCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1], text = "Select emotion", fill="black", anchor=tk.NW)
-    trainCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + buttYOffset, text = "Start learning", fill="black",anchor=tk.NW)
+    trainCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + buttYOffset, text = "Start recording", fill="black",anchor=tk.NW)
+    trainCanvas.create_text(buttTextPosOrig[0], buttTextPosOrig[1] + 2 * buttYOffset, text = "Train decision tree", fill="black",anchor=tk.NW)
 
     emOption = StringVar(trainCanvas)
     emOption.set(OPTIONS[0])
@@ -274,5 +298,9 @@ def tkInit():
     button8Pos = (buttPosOrig[0], buttPosOrig[1] + buttYOffset)
     button8 = tk.Button(trainCanvas, text="Start", command= lambda: butt8Cmd(emOption))
     button8.place(x = button8Pos[0], y = button8Pos[1])
+
+    button9Pos = (buttPosOrig[0], buttPosOrig[1] + 2 * buttYOffset)
+    button9 = tk.Button(trainCanvas, text="Train", command= butt9Cmd)
+    button9.place(x = button9Pos[0], y = button9Pos[1])
 
     return root

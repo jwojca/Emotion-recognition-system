@@ -13,7 +13,8 @@ exePath  = r"C:\Users\hwojc\Desktop\Diplomka\Open Face\OpenFace_2.2.0_win_x64\Fe
 args = ["-device", "2", "-cam_width", "640", "-cam_height", "480", "-vis-aus", "-aus", "-out_dir", "-mloc", "model/main_clnf_general.txt", outDir]
 
 filePath = os.path.dirname(__file__)
-customCsvPath = os.path.join(filePath, r'csv\custom\custom.csv')
+customCsvPath = os.path.join(filePath, r'csv\custom\trainCustom.csv')
+customTestCsvPath = os.path.join(filePath, r'csv\custom\testCustom.csv')
 
 def deleteFolderContents(folder_path):
     """
@@ -126,9 +127,12 @@ def writeToCustomCSV(csvReadPath, emotion):
    
     # Get the current size of the file
     lastPosition = os.path.getsize(csvReadPath)
-    numOfSamples = 200
+    trainSamples = 200
+    testSamples = 50
+    numOfSamples = trainSamples + testSamples
     writtenSamples = 0
-    ofDataArr = []
+    trainDataArr = []
+    testDataArr = []
 
     while True:
         time.sleep(0.3)
@@ -147,7 +151,10 @@ def writeToCustomCSV(csvReadPath, emotion):
                     for row in reader:
                         #append selected emotion to csv file
                         row.append(emotion)
-                        ofDataArr.append(row)
+                        if writtenSamples < trainSamples:
+                            trainDataArr.append(row)
+                        else:
+                            testDataArr.append(row)
                         writtenSamples += 1
                         if writtenSamples >= numOfSamples:
                             break
@@ -158,10 +165,12 @@ def writeToCustomCSV(csvReadPath, emotion):
             print("CSV file doesnt exist!")
 
         prevData = []
+        prevTestData = []
         if writtenSamples >= numOfSamples:
+            #Write to train csv file
             with open(customCsvPath, 'r') as writeFile:
                 reader = csv.reader(writeFile)
-                position = getCsvPos(numOfSamples, emotion)
+                position = getCsvPos(trainSamples, emotion)
                 for row in reader:
                     prevData.append(row)
 
@@ -169,11 +178,28 @@ def writeToCustomCSV(csvReadPath, emotion):
                 writer = csv.writer(writeFile, delimiter = ',')
                 for row in prevData[:position]:
                     writer.writerow(row)
-                for row in ofDataArr:
+                for row in trainDataArr:
                     writer.writerow(row)
-                for row in prevData[position + numOfSamples:]:
+                for row in prevData[position + trainSamples:]:
                     writer.writerow(row)
-            print("Saved to custom CSV")
+            print("Saved to custom train CSV")
+
+            #Write to test csv file
+            with open(customTestCsvPath, 'r') as writeFile:
+                reader = csv.reader(writeFile)
+                position = getCsvPos(testSamples, emotion)
+                for row in reader:
+                    prevTestData.append(row)
+
+            with open(customTestCsvPath, 'w', newline='') as writeFile:
+                writer = csv.writer(writeFile, delimiter = ',')
+                for row in prevTestData[:position]:
+                    writer.writerow(row)
+                for row in testDataArr:
+                    writer.writerow(row)
+                for row in prevTestData[position + testSamples:]:
+                    writer.writerow(row)
+            print("Saved to custom test CSV")
             break
 
    
