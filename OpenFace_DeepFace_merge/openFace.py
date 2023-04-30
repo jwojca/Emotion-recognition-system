@@ -9,10 +9,12 @@ import numpy as np
 import shutil
 from tkinter import filedialog as fd
 
+
+#TODO make relative path
 outDir = r"C:\Users\hwojc\Desktop\Diplomka\Repo\OpenFace_DeepFace_merge\processed"
 exePath  = r"C:\Users\hwojc\Desktop\Diplomka\Open Face\OpenFace_2.2.0_win_x64\FeatureExtraction.exe"
-#args = ["-device", "2", "-cam_width", "640", "-cam_height", "480", "-vis-aus", "-aus", "-out_dir", outDir]
-args = ["-device", "2", "-cam_width", "640", "-cam_height", "480", "-vis-aus", "-aus", "-out_dir", "-mloc", "model/main_clnf_general.txt", outDir]
+
+
 
 filePath = os.path.dirname(__file__)
 customTrainCsvPath = os.path.join(filePath, r'csv\custom\trainCustom.csv')
@@ -24,6 +26,11 @@ baseTestCsvPath = os.path.join(filePath, r'csv\base\testBase.csv')
 def deleteFolderContents(folder_path):
     """
     Deletes all files and subdirectories inside a folder, but not the folder itself.
+    Args:
+        folder_path: Path of directory which should be empty.
+
+    Returns:
+        Nothing
     """
     for filename in os.listdir(folder_path):
         file_path = os.path.join(folder_path, filename)
@@ -53,13 +60,33 @@ def GetDominantEmotion(data):
     return (dominantEmotion, dominantPercentage)
 
 def featuresExtractionWebcam():
+    """
+    Starts OpenFace analysis on external webcam via command prompt. 
+
+    Args:
+        None
+
+    Returns:
+        A process object.
+    """
     #Delete previous data
     deleteFolderContents(outDir)
+
     # start the subprocess
+    args = ["-device", "2", "-cam_width", "640", "-cam_height", "480", "-vis-aus", "-aus", "-out_dir", "-mloc", "model/main_clnf_general.txt", outDir]
     process = subprocess.Popen([exePath] + args)
     return process
 
 def checkCSV():
+    """
+    Checks if OpenFace process already created a csv file with its output data.
+
+    Args:
+        None
+
+    Returns:
+        A path of csv file.
+    """
     while True:
         files = os.listdir(outDir)
         csvFiles = False
@@ -77,7 +104,24 @@ def checkCSV():
     return csvFilePath
 
 
-def predict(csvFilePath, clf_entropy, lastPosition, gSkipHeader):
+def predict(csvFilePath, treeClass, lastPosition, skipHeader):
+    """
+    Reads OpenFace output csv file and predict the emotion based on decision tree classification.
+    It reads only new frames since last read.
+
+    Args:
+        csvFilePath: Path of OpenFace csv file
+        treeClass: Decision tree object used to predictions
+        lastPosition: Last position of csv file read
+        skipHeader: Boolean variable used for skip header
+
+    Returns:
+        A tuple
+            ofDominantEm: Most frequent emotion from all read frames.
+            dominantEmPct: Percentage of occurence of dominant emotion.
+            lastPosition: End position of csv file for next read.
+    """
+
     ofDominantEm = "None"
     try:
         # Get the current size of the file
@@ -92,35 +136,35 @@ def predict(csvFilePath, clf_entropy, lastPosition, gSkipHeader):
                 # Create a new CSV reader object
                 reader = csv.reader(csvFile)
                 
-                ofDataArr = []
                 # Process the new data in the file
+                ofDataArr = []
                 for row in reader:
-                    # Do something with the row data
                     ofDataArr.append(row)
+
                 ofData = pd.DataFrame(ofDataArr)
                 rows, cols = ofData.shape
                 conf = []
 
-                if gSkipHeader:
+                #If header was read, skip it
+                if skipHeader:
                     aus = ofData.values[1:rows, 5:cols]
                     conf = ofData.values[1:rows, 3]
                 else:
                     aus = ofData.values[:, 5:cols]
                     conf = ofData.values[:, 3]
                 
+                #Calculate average confidence
                 conf = np.array(conf, dtype=np.float)
                 avgConf = np.mean(conf)
                 
                 if rows > 0:
                     if avgConf < 0.5:
-                        ofDominantEm = "Low confidence"
+                        ofDominantEm = "Low confidence eee"
                         dominantEmPct = 0.0
                     else:
-                        emPred = decTree.prediction(aus, clf_entropy)
+                        emPred = decTree.prediction(aus, treeClass)
                         ofDominantEm, dominantEmPct = GetDominantEmotion(emPred)
-                        #print(ofDominantEm, dominantEmPct)
-                
-
+            
                 # Update the last position to the current size of the file
                 lastPosition = currentSize
     except FileNotFoundError:
@@ -130,10 +174,19 @@ def predict(csvFilePath, clf_entropy, lastPosition, gSkipHeader):
 
 
 def createCustomCsv():
+    """
+    Function for asking user to create new folder and copy train and test csv files into the folder.
+    It also updates path (Global variables) of the files to be used in the app.
+
+    Args:
+        None
+    Returns:
+        Nothing
+    """
 
     #Ask to create new directory
     initDir = os.path.join(filePath, r'csv')
-    dirPath = fd.askdirectory(title='Create new directorz', initialdir = initDir)
+    dirPath = fd.askdirectory(title='Create new directory', initialdir = initDir)
 
     #Create destination path of csv file
     newTestCsvPath = os.path.join(dirPath, r'testCustom.csv')
@@ -151,6 +204,15 @@ def createCustomCsv():
 
 
 def writeToCustomCSV(csvReadPath, emotion):
+    """
+    Function that writes data to custom train and test csv files used to train the decision tree.
+    Default is 200 samples for train and 50 samples for test for each emotion.
+    Args:
+        csvReadPath: Path of OpenFace output csv file
+        emotion: Selected emotion to be recorded to new files.
+    Returns:
+        Nothing
+    """
    
     # Get the current size of the file
     lastPosition = os.path.getsize(csvReadPath)
@@ -233,6 +295,8 @@ def writeToCustomCSV(csvReadPath, emotion):
 def getCsvPos(numOfSamples, emotionStr):
 
     """ 
+    Gets position to which data should be written (based on selected emotion).
+    For example for default training file of 200 samples per emotion
           0        : Header
           1 -  200 : Angry
         201 -  400 : Disgust
@@ -241,6 +305,12 @@ def getCsvPos(numOfSamples, emotionStr):
         801 - 1000 : Neutral
        1001 - 1200 : Sad
        1201 - 1400 : Surprise
+
+    Args:
+        numOfSamples: Number of samples for emotion class.
+        emotionStr: String value of selected emotion.
+    Returns:
+        Integer value of the position
     """ 
     
     if emotionStr == "Angry":
@@ -265,11 +335,13 @@ def getCsvPos(numOfSamples, emotionStr):
     return position
     
 
-    
-    
-
-    
-
-
 def destroyProcess(process):
+    """ 
+    Terminate process.
+
+    Args:
+        process: Object of process, which should be terminated.
+    Returns:
+        Nothing
+    """ 
     process.terminate()
