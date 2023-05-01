@@ -14,11 +14,19 @@ weightsFile = r'C:\Users\hwojc\Desktop\Diplomka\OpenPose\repo\openpose\models\po
 nPoints = 15
 POSE_PAIRS = [[0,1], [1,2], [2,3], [3,4], [1,5], [5,6], [6,7], [1,14], [14,8], [8,9], [9,10], [14,11], [11,12], [12,13] ]
 
-
-import matplotlib.path as mpath
-import numpy as np
-
 def customEllipse(center, ellAngle, diameter, arcStart, arcEnd):
+    """
+    Creates part of ellipse for representing the face area. 
+    Args:
+        center: Center point of the ellipse.
+        ellAngle: Int value specifying ellipse angle of rotation from vertical axis.
+        diameter: Int value which is used to calculate height and width of the ellipse.
+        arcStart: Int value specifying start angle in degrees.
+        arcEnd: Int value specifying end angle in degrees.
+
+    Returns:
+        e: Path object that represents custom ellipse area.
+    """
     # Define the arc parameters
     width = int(diameter/1.5) * 2
     height = int(diameter/1.2) * 2
@@ -50,24 +58,57 @@ def customEllipse(center, ellAngle, diameter, arcStart, arcEnd):
 
 
 
-def isInside(e, point):
+def isInside(objectArea, point):
+    """
+    Checks if point is inside given object. 
+    Args:
+        point: Point specified by x and y pixel value.
+        objectArea: Matplotlib.path object specifying object area.
+
+    Returns:
+        boolean: True if point is inside, False otherwise.
+    """
     # Check if the point is inside the path
-    return e.contains_point(point)
+    return objectArea.contains_point(point)
 
 def drawCustomEllipse(e, frame, color):
+    """
+    Draws custom Matplotlib.path object to given frame. It draws only the borders.
+    Args:
+        e: Matplotlib.path of the object.
+        frame: Input frame.
+        color: Color of object to be drawn.
+    Returns:
+        frame: Updated frame.
+    """
     contours = e.to_polygons()
     cv2.polylines(frame, np.int32([contours]), True, color, 2)
     return frame
 
 def angleFromVertical(p1, p2):
-    """Calculate the angle in degrees between the line connecting points p1 and p2
-    and the vertical axis."""
+    """
+    Calculate the angle in degrees between the line connecting points p1 and p2
+    and the vertical axis.
+    Args:
+        p1: Point specified by x and y pixel value.
+        p2: Point specified by x and y pixel value.
+    Returns:
+        angle: Angle in degrees.
+    """
     deltaY = p2[1] - p1[1]
     deltaX = p2[0] - p1[0]
     angle = math.atan2(deltaX, deltaY)
     return -math.degrees(angle)
 
 def DrawSkeleton(frame, points):
+    """
+    Draws skeleton to given frame. It uses data from OpenPose.
+    Args:
+        frame: Input frame to be modified.
+        points: Points detected by OpenPose.
+    Returns:
+        frame: Updated frame.
+    """
     # Draw Skeleton
     for pair in POSE_PAIRS:
         partA = pair[0]
@@ -78,8 +119,23 @@ def DrawSkeleton(frame, points):
             cv2.circle(frame, points[partA], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
     return frame
 
-def handsPos(frame, points, skelVisBUt):
-    #handPos is array containing vals of (RHInBottFace, LHInBottFace, RHInTopFace, LHInTopFace, rhRaised, lhRaised, RHInChes, LHInChest)
+def handsPos(frame, points, skelVisBut):
+    """
+    Detects if hands are on specific position.
+    Args:
+        frame: Input frame to be modified.
+        points: Points detected by OpenPose.
+        skelVisBut: Value of button that specifies if face areas should be visualized or not.
+    Returns:
+        frame: Updated frame.
+        handPos: Array with boolean values.
+
+        handPos = [RHInBottFace, LHInBottFace, RHInTopFace, LHInTopFace, rhRaised, lhRaised, RHInChes, LHInChest]
+        For example if both hands are in top face area, output will be:
+        handsPos = [False, False, True, True, False, False, False, False]
+    """
+
+    
     handsPos = [False, False, False, False, False, False, False, False]
     headDetected = points[0] and points[1]
     chestDetected = points[14] and points[1]
@@ -88,7 +144,7 @@ def handsPos(frame, points, skelVisBUt):
     
     if headDetected:
         diameter = math.dist(points[0], points[1])
-        midPoint = [0, 0]
+
         # Define two points
         pointArr0 = np.array(points[0])
         pointArr1 = np.array(points[1])
@@ -103,8 +159,6 @@ def handsPos(frame, points, skelVisBUt):
         adjMidpointBot = ((1 - weight) * pointArr1[0] + weight * pointArr0[0], (1 - weight) * pointArr1[1] + weight * pointArr0[1])
         botElCent = tuple(np.round(adjMidpointBot).astype(int))
 
-        
-
         center = tuple(np.round(midpoint).astype(int))
         ellAngle = angleFromVertical(points[0], points[1])
         #cv2.circle(frame, center, round((diameter/2) * 1.2), (255, 0, 0), thickness = 2)
@@ -112,14 +166,10 @@ def handsPos(frame, points, skelVisBUt):
         bottEl = customEllipse(botElCent, ellAngle, diameter, 0, 180)
         topEl = customEllipse(topElCent, ellAngle, diameter, 180, 360)
         
-        if skelVisBUt:
+        if skelVisBut:
             frame = drawCustomEllipse(bottEl, frame, (255, 0, 0))
             frame = drawCustomEllipse(topEl, frame, (0, 0, 255))
         
-        
-        e = Ellipse((int(center[0]), int(center[1])), 2*int(diameter/1.5), 2*int(diameter/1.2), ellAngle)
-        
-
         if(rightWrist and not leftWrist):
             #Check if is in face area
             if isInside(bottEl, rightWrist):
@@ -160,12 +210,11 @@ def handsPos(frame, points, skelVisBUt):
             if lHandRaised(points, handsPos[1] or handsPos[3]):
                 handsPos[5] = True
  
-
     if chestDetected:
         chest = points[14]
         neck = points[1]
         diameter = int(1.1 * math.dist(chest, neck)/2)
-        if skelVisBUt:
+        if skelVisBut:
          cv2.circle(frame, chest, diameter, (255, 0, 0), thickness = 2)
         chestArea = Circle(chest, diameter)
 
@@ -186,18 +235,23 @@ def handsPos(frame, points, skelVisBUt):
                 #print("LH in chest")
                 handsPos[7] = True
 
-
-
-
     return (frame, handsPos)
         
 
 def rHandRaised(points, inFace):
+    """
+    Detects if right hand is raised.
+    Args:
+        points: Points detected by OpenPose.
+        inFace: Boolean value that indicates that hand is in face.
+    Returns:
+        boolean: If raised true, else false
+    """
     rightWrist = points[4]
     rightEl = points[3]
     neck = points[1]
     angle = 40.0
-     #if not in face -> check if raised
+    #if not in face -> check if raised
     if not inFace:
         if rightEl and rightEl[1] <= neck[1]:
             return True
@@ -207,6 +261,14 @@ def rHandRaised(points, inFace):
         return False
 
 def lHandRaised(points, inFace):
+    """
+    Detects if left hand is raised.
+    Args:
+        points: Points detected by OpenPose.
+        inFace: Boolean value that indicates that hand is in face.
+    Returns:
+        boolean: If raised true, else false
+    """
     leftwrist = points[7]
     leftEl = points[6]
     neck = points[1]
@@ -221,6 +283,15 @@ def lHandRaised(points, inFace):
         return False
 
 def GetPoints(output, frame):
+    """
+    Gets points detected by OpenPose.
+    Args:
+        output: Output of CNN pre-trained model.
+        frame: Input frame.
+    Returns:
+        points: Array of x, y points. Each corresponds to specific joint of human skeleton.
+    """
+
     frameWidth = frame.shape[1]
     frameHeight = frame.shape[0]
     threshold = 0.1
@@ -250,14 +321,14 @@ def GetPoints(output, frame):
     return points
 
 def loadModel():
+    """
+    Loads pretrained CNN model.
+    Args:
+        None
+    Returns:
+        net: Net object which is used to calling other function related to CNN model.
+    """
     net = cv2.dnn.readNetFromCaffe(protoFile, weightsFile)
-    #imgPath = r'C:\Users\hwojc\Desktop\Diplomka\Repo\OpenPose\OpenPose\single.jpeg'
-    """
-    parser = argparse.ArgumentParser(description='Run keypoint detection')
-    parser.add_argument("--device", default="gpu", help="Device to inference on")
-    parser.add_argument("--image_file", default=imgPath, help="Input image")
-    args = parser.parse_args()
-    """
     net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
     net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
     return net
