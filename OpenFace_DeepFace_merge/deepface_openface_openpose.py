@@ -6,9 +6,6 @@ import openPose
 import openFace
 import decTree
 import gui
-
-
-
 import tkinter as tk
 from PIL import Image, ImageTk
 

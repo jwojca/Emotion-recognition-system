@@ -22,30 +22,28 @@ featureList = ['AU01_r', 'AU02_r', 'AU04_r', 'AU05_r', 'AU06_r', 'AU07_r', 'AU09
  			   'AU10_c', 'AU12_c', 'AU14_c', 'AU15_c', 'AU17_c', 'AU20_c', 'AU23_c',
  			   'AU25_c', 'AU26_c', 'AU28_c', 'AU45_c']
 
-# Function importing Dataset
+
 def importdata():
-	#filePath = os.path.dirname(__file__)
-	#trainCSV = os.path.join(filePath, r'csv\trainAUcAUr.csv')
-	#trainCSV = os.path.join(filePath, r'csv\custom\custom.csv')
-	#testCSV = os.path.join(filePath, r'csv\testAUcAUr.csv')
-	#testCSV = os.path.join(filePath, r'csv\custom\customTest.csv')
+	"""
+    Imports dataset from csv files. 
+    Args:
+        None:
+		Dataset csv files are selected by user.
+    Returns:
+        trainData: Pandas dataframe representing train data of selected csv file.
+		testData: Pandas dataframe representing test data of selected csv file.
+    """
+	
 	messagebox.showinfo("Info", "Choose files for training the decision tree.")
 	filePath = os.path.dirname(__file__)
 	csvPath = os.path.join(filePath, r'csv')
-
-	#trainCSV = fd.askopenfilename(title='Open a file', initialdir = csvPath, filetypes= (('csv files', '*.csv'),))
-	#testCSV = fd.askopenfilename(title='Open a file', initialdir = csvPath, filetypes= (('csv files', '*.csv'),))
-
 	testCSV, trainCSV =  fd.askopenfilenames(title='Open a file', initialdir = csvPath, filetypes= (('csv files', '*.csv'),))
 
-
-	print(trainCSV)
 	try:
 		trainData = pd.read_csv(trainCSV, sep= ',', header=None)
 		testData = pd.read_csv(testCSV, sep= ',', header=None)
 	except:
 		print("bad path")
-	
 	
 	# Printing the dataset obseravtions
 	#print ("Dataset: ", trainData.head())
@@ -53,8 +51,19 @@ def importdata():
 
 	return trainData, testData
 
-# Function to load the dataset
+
 def loaddataset(trainData, testData):
+	"""
+    Loads only relevant data of the dataset, such as action units and emotion classes. 
+    Args:
+        trainData: Pandas dataframe representing train data of selected csv file.
+		testData: Pandas dataframe representing test data of selected csv file.
+    Returns:
+        X_train: Data representing features for training.
+		X_test: Data representing features for testing.
+		Y_train: Data representing annotated emotions for training.
+		Y_test: Data representing annotated emotions for testing.
+    """
 	rows, cols = trainData.shape
 
 	# Separating the target variable
@@ -66,8 +75,19 @@ def loaddataset(trainData, testData):
 	
 	return X_train, X_test, y_train, y_test
 		
-# Function to perform training with entropy.
-def train_using_entropy(X_train, X_test, y_train, maxDepth, minSamplesLeaf):
+
+def train_using_entropy(xTrain, yTrain, maxDepth, minSamplesLeaf):
+	"""
+    Function to perform training with entropy. 
+    Args:
+        xTrain: Data representing features for training.
+		yTrain: Data representing annotated emotions for training.
+		maxDepth: Maximal depth of decision tree.
+		minSamplesLeaf: Minimal number of samples allowed in leaf node.
+
+    Returns:
+        clf_entropy: Object of trained decision tree.
+    """
 
 	# Decision tree with entropy
 	clf_entropy = DecisionTreeClassifier(
@@ -75,34 +95,57 @@ def train_using_entropy(X_train, X_test, y_train, maxDepth, minSamplesLeaf):
 			max_depth = maxDepth, min_samples_leaf = minSamplesLeaf)
 
 	# Performing training
-	clf_entropy.fit(X_train, y_train)
+	clf_entropy.fit(xTrain, yTrain)
 	return clf_entropy
 
 
-# Function to make predictions
-def prediction(X_test, clf_object):
+def prediction(xTest, clf_object):
+	"""
+    Function to make predictions. 
+    Args:
+        xTest: Data representing features for making prediction.
+		clf_object: Object of trained decision tree.
 
-	# Predicton on test with giniIndex
-	y_pred = clf_object.predict(X_test)
+    Returns:
+        yPred: Data representing prediction output.
+    """
+
+	yPred = clf_object.predict(xTest)
 	#print("Predicted values:")
 	#print(y_pred)
-	return y_pred
+	return yPred
 
-def cal_accuracy(y_test, y_pred):
+def cal_accuracy(yTest, yPred):
+	"""
+    Function calculate accuracy of predictions. 
+    Args:
+        yTest: Data representing features for making prediction.
+		yPred: Data representing annotated emotions for testing.
+    Returns:
+        acc: Calculated accuracy.
+    """
 	
-	print("Confusion Matrix: \n", confusion_matrix(y_test, y_pred))
-	print ("Accuracy : ", accuracy_score(y_test,y_pred)*100)
-	print("Report : \n",classification_report(y_test, y_pred))
-	acc = accuracy_score(y_test,y_pred)*100
+	print("Confusion Matrix: \n", confusion_matrix(yTest, yPred))
+	print ("Accuracy : ", accuracy_score(yTest,yPred)*100)
+	print("Report : \n",classification_report(yTest, yPred))
+	acc = accuracy_score(yTest,yPred)*100
 	return acc
 
 def trainTree(plotTree):
+	"""
+    Function to train decision tree. 
+    Args:
+        plotTree: Boolean specifies if tree should be visualized or not.
+    Returns:
+        clf_entropy: Object of trained decision tree.
+    """
+
 	#TODO replace constants in training process
 
 	#train decision tree
 	trainData, testData = importdata()
 	X_train, X_test, y_train, y_test = loaddataset(trainData, testData)
-	clf_entropy = train_using_entropy(X_train, X_test, y_train, 7, 37)
+	clf_entropy = train_using_entropy(X_train, y_train, 7, 37)
 
 	y_pred_entropy = prediction(X_test, clf_entropy)
 	acc = cal_accuracy(y_test, y_pred_entropy)
