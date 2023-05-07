@@ -73,7 +73,7 @@ def featuresExtractionWebcam():
     deleteFolderContents(outDir)
 
     # start the subprocess
-    args = ["-device", "2", "-cam_width", "640", "-cam_height", "480", "-vis-aus", "-aus", "-out_dir", "-mloc", "model/main_clnf_general.txt", outDir]
+    args = ["-device", "1", "-cam_width", "640", "-cam_height", "480", "-vis-aus", "-aus", "-out_dir", "-mloc", "model/main_clnf_general.txt", outDir]
     process = subprocess.Popen([exePath] + args)
     return process
 

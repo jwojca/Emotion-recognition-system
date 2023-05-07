@@ -119,13 +119,13 @@ def DrawSkeleton(frame, points):
             cv2.circle(frame, points[partA], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
     return frame
 
-def handsPos(frame, points, skelVisBut):
+def handsPos(frame, points, visButtState):
     """
     Detects if hands are on specific position.
     Args:
         frame: Input frame to be modified.
         points: Points detected by OpenPose.
-        skelVisBut: Value of button that specifies if face areas should be visualized or not.
+        visButtState: Value of button that specifies if face areas should be visualized or not.
     Returns:
         frame: Updated frame.
         handPos: Array with boolean values.
@@ -166,7 +166,7 @@ def handsPos(frame, points, skelVisBut):
         bottEl = customEllipse(botElCent, ellAngle, diameter, 0, 180)
         topEl = customEllipse(topElCent, ellAngle, diameter, 180, 360)
         
-        if skelVisBut:
+        if visButtState:
             frame = drawCustomEllipse(bottEl, frame, (255, 0, 0))
             frame = drawCustomEllipse(topEl, frame, (0, 0, 255))
         
@@ -214,7 +214,7 @@ def handsPos(frame, points, skelVisBut):
         chest = points[14]
         neck = points[1]
         diameter = int(1.1 * math.dist(chest, neck)/2)
-        if skelVisBut:
+        if visButtState:
          cv2.circle(frame, chest, diameter, (255, 0, 0), thickness = 2)
         chestArea = Circle(chest, diameter)
 

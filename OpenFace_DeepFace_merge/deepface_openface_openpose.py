@@ -53,7 +53,6 @@ testEnd = 0
 
 gWebcamCanvasShape = gui.gWebcamCanvasShape
 
-
 process = openFace.featuresExtractionWebcam()
 csvFilePath = openFace.checkCSV()
 
@@ -298,6 +297,7 @@ def update_image():
             if gRetrainTree:
                 trainedTree = gui.trainedTree
                 gui.button9State = False
+                print("Tree was updated...")
 
             print("Waiting for start...")
             time.sleep(0.1)
